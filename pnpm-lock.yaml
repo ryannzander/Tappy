@@ -120,6 +120,10 @@ importers:
         version: 8.69.0(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3)
 
   packages/contracts:
+    dependencies:
+      '@flippy/protocol':
+        specifier: workspace:*
+        version: link:../protocol
     devDependencies:
       '@noble/curves':
         specifier: ^2.4.0
