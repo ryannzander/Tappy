@@ -70,27 +70,51 @@ throws on it, deliberately, so nobody deploys against a guess.
 
 ---
 
-## 5. Is the EIP-7951 P256VERIFY precompile live on Sepolia? — Claude (Ryan Zander), 2026-09-09
+## 5. Is the EIP-7951 P256VERIFY precompile live on Sepolia? — Claude (Ryan Zander), 2026-09-09,
+corrected same day after code review
 **Why it matters:** the human key is a Secure Enclave P-256 key. If the chain cannot verify a
 P-256 signature natively, FlippyGate must staticcall a Solidity verifier instead (~330k gas).
-**Answer:** ABSENT. Sepolia (chain id 11155111) has no code at `0x…0100` as of 2026-09-09; the
-`eth_call` succeeds and returns empty data rather than 32 bytes of 1 or 0. Fusaka's published
-scope was not sufficient evidence — measure, don't infer.
+**Answer:** LIVE at `0x0000000000000000000000000000000000000100`. Sepolia (chain id 11155111)
+returns `0x000...0001` for a valid signature as of 2026-09-09. An earlier run of this spike
+reported ABSENT; that was a false negative in the probe, not the chain — see "what went wrong"
+below. Fusaka's published scope was correct all along.
 **Evidence:** `pnpm --filter @flippy/contracts exec tsx script/checkP256.ts` against two
-independent Sepolia RPCs:
-- `https://ethereum-sepolia-rpc.publicnode.com` → `chain 11155111`, `returned 0x (empty)`,
-  `PRECOMPILE ABSENT — deploy the fallback verifier`.
-- `https://1rpc.io/sepolia` → same chain id, same empty result.
-(`https://rpc.sepolia.org` is dead — 404 on every request — and is not usable evidence either
-way; the script threw loudly on it instead of masking the failure, which is the desired
-behaviour.)
+independent Sepolia RPCs, both now printing `PRECOMPILE LIVE`:
+- `https://ethereum-sepolia-rpc.publicnode.com` → `chain 11155111`,
+  `returned 0x0000000000000000000000000000000000000000000000000000000000000001`.
+- `https://1rpc.io/sepolia` → same chain id, same non-empty result.
+(`https://rpc.sepolia.org` is dead — 404 on every request — not usable evidence either way; the
+script throws loudly on it instead of masking the failure.)
+**What went wrong the first time:** the script's local self-check (`p256.verify(sig, message,
+pub)`) passed even though the on-chain signature was invalid, because `@noble/curves` v2's
+`sign()`/`verify()` default to `{ prehash: true }` — they hash the `message` argument themselves
+before signing/verifying. `message` here was already a digest (hashed by hand with
+`@noble/hashes/sha2.js`'s `sha256`), so with defaults left on, `sign()` silently signed
+`sha256(message)` while the on-chain input carried the literal `message` as EIP-7951's `h` field
+(the precompile does no hashing of its own — see EIP-7951 "ABI for P256VERIFY Operation"). Local
+`verify()` made the identical mistake, so it agreed with `sign()` while disagreeing with the
+chain — a self-consistent bug that looked like a passing self-check. Fix: pass
+`{ prehash: false }` explicitly to both `p256.sign()` and `p256.verify()` so `message` is treated
+as the literal digest. Confirmed independently before accepting the corrected result:
+1. `eth_estimateGas` on `0x100` with 160 zero bytes costs `0x70d7` (28887) vs `0x5998` (22936) for
+   a genuinely code-free address and `0x6194` (24980) for ecrecover (`0x01`) — real precompile
+   dispatch logic runs at `0x100`, it isn't a bare account.
+2. Verified the `eth_call` plumbing itself against the well-known ecrecover precompile with a
+   real secp256k1 signature and a known private-key-to-address vector (privkey `1` →
+   `0x7e5f...95bdf`, matches the well-known value) before trusting the P-256 result.
+3. With `{ prehash: false }` on both sides, `p256.verify()` still returns `true` locally, and the
+   *same* 160-byte input that previously came back empty now returns
+   `0x000...0001` on-chain — the fix closes the gap between local and on-chain verification, not
+   just a coincidence.
 `@noble/curves` p256 import path used: `@noble/curves/nist.js` (curves 2.4.0; v2's export map
 requires the `.js` suffix). `@noble/hashes` sha256 path: `@noble/hashes/sha2.js` (hashes 2.4.0,
-same reason). Also note for Task 3: `@noble/curves@2.x`'s `p256.sign()` returns a raw 64-byte
-compact `r || s` Uint8Array by default, not a `{r, s}` bigint object as in v1 — slice bytes
-directly instead of calling `.toString(16)` on `.r`/`.s`.
-**Consequence:** deploy with `P256_VERIFIER=<fallback verifier address>`, not `0x…0100`. Task 6's
-deploy inputs must point at a deployed Solidity P-256 verifier; Task 5's contract code is
-unaffected since the verifier is a constructor argument. Re-run this script after Fusaka's mainnet
-date confirms Sepolia's actual activation, since this result is a point-in-time measurement, not a
-permanent fact.
+same reason). Two API-shape changes for Task 3 to carry forward:
+- `p256.sign()` returns a raw 64-byte compact `r || s` `Uint8Array` by default, not a `{r, s}`
+  bigint object as in v1 — slice bytes directly instead of calling `.toString(16)` on `.r`/`.s`.
+- `sign()`/`verify()` default to `{ prehash: true }` in v2. Always pass `{ prehash: false }`
+  explicitly when `message` is already a digest you hashed yourself — otherwise it gets hashed
+  again silently, with no error, no warning, and a signature that still locally self-verifies.
+**Consequence:** deploy with `P256_VERIFIER=0x0000000000000000000000000000000000000100`. Task 6's
+deploy inputs use the precompile address directly; no fallback Solidity verifier is needed. Spec
+§4.3's fallback-verifier path is available but unnecessary for Sepolia as of this measurement —
+re-run this script if Sepolia is later reset or if targeting a different network.
