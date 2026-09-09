@@ -1,10 +1,10 @@
 # Tappy
 
-**An AI agent wallet the agent can't drain.** The agent holds one key. You hold the other on a
+**An AI agent wallet the agent can't drain.** The agent holds one key, and you hold the other on a
 Flipper Zero. Every transaction is 2-of-2: the agent can propose anything, and nothing moves
 until a human physically presses the button.
 
-Built for ETHOnline 2026. Testnet only.
+Built for ETHOnline 2026
 
 > Agent wallets with spending limits already exist. A policy file is not a person. Tappy's
 > second factor is a thumb.
