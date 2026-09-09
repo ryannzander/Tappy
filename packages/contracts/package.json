@@ -18,6 +18,13 @@
     "./abi/*": "./abi/*"
   },
   "devDependencies": {
-    "@openzeppelin/contracts": "^5.1.0"
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@openzeppelin/contracts": "^5.1.0",
+    "tsx": "^4.23.13",
+    "viem": "^2.56.3"
+  },
+  "dependencies": {
+    "@tappy/protocol": "workspace:*"
   }
 }

@@ -11,7 +11,22 @@ fs_permissions = [{ access = "read", path = "../protocol/vectors" }, { access = 
 remappings = [
   "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
   "forge-std/=lib/forge-std/src/",
+  "p256-verifier/=lib/p256-verifier/src/",
 ]
+
+# The vendored P256Verifier is stack-too-deep without the IR pipeline, and upstream ships it with
+# via_ir and 999999 runs. Scope those settings to that one file so TappyGate's own bytecode keeps
+# being built the way it always was.
+[[profile.default.additional_compiler_profiles]]
+name = "p256"
+via_ir = true
+optimizer = true
+optimizer_runs = 999999
+
+[[profile.default.compilation_restrictions]]
+paths = "lib/p256-verifier/src/P256Verifier.sol"
+via_ir = true
+optimizer_runs = 999999
 
 [fmt]
 line_length = 110

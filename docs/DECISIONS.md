@@ -15,5 +15,17 @@ say so in the group chat and change this file in the same PR as the code.
 | 8 | "What you see is what you sign" deferred to v2 | The device renders a summary the laptop sends. Honest about it in the README rather than implying otherwise. | 2026-09-04 |
 | 9 | T3 stack for the web app | Team strength, one deploy for chat + dashboard + shop, and tRPC gives the React Native client the same typed API later. | 2026-09-04 |
 | 10 | The attack scene is never cut | It is the eight seconds that make the physical step the point rather than an accessory. | 2026-09-04 |
-| 11 | The agent runs on OpenAI `gpt-5.6-terra`, not `claude-opus-5` | Token cost. Terra is $2/$12 per MTok against Opus 5's $5/$25, and the loop is mostly "pick a tool, fill in args" rather than hard reasoning. Reverses the Agent row of SPEC §5. Nothing else in the architecture is provider-specific — the loop is ours either way. | 2026-09-04 |
-| 12 | Renamed from Flippy the Dolphin to Tappy, including `TappyGate` and the EIP-712 domain | Done on day 1 on purpose. The domain name is hashed into every digest, so renaming the contract regenerates `vectors/execute.json` and invalidates every existing signature. Nothing was deployed and no real signature existed yet, so this was the cheapest day it will ever be. Next week it would have meant redeploying on three chains. The dolphin went with it: Flippy was a pun on Flipper, and Tappy is about the tap. | 2026-09-04 |
+| 11 | The iPhone is the primary approval device; the Flipper is the second | The Secure Enclave gives custody the Flipper's JS app could not, and the phone is a screen and a CPU we already trust. | 2026-09-08 |
+| 12 | The human key is P-256 in the Secure Enclave, verified on-chain by EIP-7951 | Makes "the key cannot leave the device" literally true and provable on-chain. Was impossible when #1 was written. | 2026-09-08 |
+| 13 | Reverses #8 — "what you see is what you sign" ships in v1 | Infeasible on the Flipper, a day's work on the iPhone. The phone recomputes the digest and will not sign a mismatch. | 2026-09-08 |
+| 14 | Narrows #9 — T3 stays, as an API with no pages, renamed `apps/hub` | The client is the iOS app. A web UI is out of scope. | 2026-09-08 |
+| 15 | No sessions, no spending limits, no autonomous trading | The product is a chat bot that proposes one transaction at a time and a human who approves each one. | 2026-09-08 |
+| 16 | The mock shop and `propose_buy` are dropped | They needed a web surface. `send` and `swap` carry the demo, including the attack scene. | 2026-09-08 |
+
+Superseded by these: #1 (partly), #8, #9. Still binding: #2, #3, #4, #5, #6, #10.
+
+| 17 | The NFC tap is read by the **Flipper**, not the iPhone | Core NFC needs a paid Apple Developer account we do not have. The Flipper has NFC hardware and needs no entitlement. Costs a Flipper C app, since mJS has no NFC module. | 2026-09-09 |
+| 18 | Two approval devices, one gate | Flipper approves with secp256k1 (65-byte sig), iPhone with a Secure Enclave P-256 key (64-byte sig). `TappyGate` dispatches on signature length, so neither device knows the other exists. | 2026-09-09 |
+| 19 | The hub keeps state in memory, not Postgres | It is a four-minute demo. A database is one more thing that can break on stage, and nothing here is worth surviving a restart. Reverses the Supabase half of #9. | 2026-09-09 |
+| 20 | The agent runs on OpenAI (GPT), not Claude | Ryan's call, 2026-09-09. Reverses SPEC §5's Anthropic SDK row. The model is behind one env var (`OPENAI_MODEL`) and the tool loop is provider-shaped, not model-shaped, so swapping back is a small change if we want it. | 2026-09-09 |
+

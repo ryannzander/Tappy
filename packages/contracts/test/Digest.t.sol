@@ -29,7 +29,7 @@ contract DigestTest is Test {
 
         // The vector pins a specific chainId and contract address, so deploy to that address there.
         vm.chainId(chainId);
-        TappyGate gate = new TappyGate(agent, human);
+        TappyGate gate = new TappyGate(agent, human, bytes32(0), bytes32(0), address(0));
         vm.etch(gateAddr, address(gate).code);
         TappyGate pinned = TappyGate(payable(gateAddr));
 

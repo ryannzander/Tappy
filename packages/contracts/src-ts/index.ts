@@ -2,14 +2,24 @@
 import TappyGateAbi from "../abi/TappyGate.json" with { type: "json" };
 import MockTokenAbi from "../abi/MockToken.json" with { type: "json" };
 import MockSwapAbi from "../abi/MockSwap.json" with { type: "json" };
-import MockMerchantAbi from "../abi/MockMerchant.json" with { type: "json" };
 
-export const abis = { TappyGate: TappyGateAbi, MockToken: MockTokenAbi, MockSwap: MockSwapAbi, MockMerchant: MockMerchantAbi } as const;
+export const abis = { TappyGate: TappyGateAbi, MockToken: MockTokenAbi, MockSwap: MockSwapAbi } as const;
 export { TappyGateAbi };
 export { MockTokenAbi };
 export { MockSwapAbi };
-export { MockMerchantAbi };
 
-export const deployments = {} as const;
+export const deployments = {
+  "sepolia": {
+    "agent": "0x19dB7F38a16899C99a8917098B72FE6Cf3cA0235",
+    "chainId": 11155111,
+    "gate": "0x35523da59aF7fA1ac12b6ca8686f33EcAf70D634",
+    "humanK1": "0x0000000000000000000000000000000000000000",
+    "humanQx": "0x2e872b2b149cb0c22f4b56582ee75f332cd9d3d23c1e24e0560234b8688d5888",
+    "humanQy": "0x614536cd3289c84ca9a7821f3a3d8eeeee1e7483b5fe00d1f5a68bacbc3b6355",
+    "p256Verifier": "0x0000000000000000000000000000000000000100",
+    "swap": "0x2042C6499e39623eC4ffA2897E0AA26c0b1b2fD2",
+    "token": "0xFC6438BFd5B205B8049F64C6825f5150372Efe1B"
+  }
+} as const;
 
 export type DeploymentKey = keyof typeof deployments;

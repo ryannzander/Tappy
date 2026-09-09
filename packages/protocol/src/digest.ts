@@ -1,6 +1,6 @@
 import { hashTypedData, keccak256, formatUnits } from "viem";
 import type { Address, Hex, TypedDataDomain } from "viem";
-import type { Action, Call, Proposal, ProposalView } from "./types.js";
+import type { Action, Call, MobileProposal, Proposal, ProposalView } from "./types.js";
 import { chainByKey, type ChainInfo } from "./chains.js";
 
 /**
@@ -54,6 +54,13 @@ export function shortHex(h: string, lead = 6, tail = 4): string {
   return h.length <= lead + tail + 2 ? h : `${h.slice(0, lead)}…${h.slice(-tail)}`;
 }
 
+/** Token amounts are not ETH — USDC has 6 decimals and rendering it as 18 shows $0.000000. */
+function tokenLabel(amount: bigint, decimals: number): string {
+  const s = formatUnits(amount, decimals);
+  const [whole = "0", frac = ""] = s.split(".");
+  return `${whole}.${(frac + "000").slice(0, 3)}`;
+}
+
 function amountLabel(wei: bigint, chain: ChainInfo): string {
   const s = formatUnits(wei, chain.nativeDecimals);
   const [whole = "0", frac = ""] = s.split(".");
@@ -64,12 +71,16 @@ function amountLabel(wei: bigint, chain: ChainInfo): string {
 export function toView(p: Pick<Proposal, "id" | "action" | "chainId">, chainKey: string): ProposalView {
   const chain = chainByKey(chainKey);
   const a: Action = p.action;
-  const [action, amount, counterparty] =
-    a.kind === "send"
-      ? (["SEND", amountLabel(a.valueWei, chain), shortHex(a.to)] as const)
-      : a.kind === "swap"
-        ? (["SWAP", amountLabel(a.sellWei, chain), `DEX ${shortHex(a.dex)}`] as const)
-        : (["BUY", amountLabel(a.valueWei, chain), `Shop: ${a.itemName}`] as const);
+  const [action, amount, counterparty] = ((): readonly [ProposalView["action"], string, string] => {
+    switch (a.kind) {
+      case "send":
+        return ["SEND", amountLabel(a.valueWei, chain), shortHex(a.to)] as const;
+      case "sendToken":
+        return ["SEND", `${tokenLabel(a.amount, a.decimals)} ${a.symbol}`, shortHex(a.to)] as const;
+      case "swap":
+        return ["SWAP", amountLabel(a.sellWei, chain), `DEX ${shortHex(a.dex)}`] as const;
+    }
+  })();
 
   return {
     id: p.id,
@@ -79,5 +90,21 @@ export function toView(p: Pick<Proposal, "id" | "action" | "chainId">, chainKey:
     counterparty,
     chain: chain.name,
     digest: p.id,
+  };
+}
+
+/** Projects a Proposal onto exactly what the phone is allowed to see. */
+export function toMobileProposal(p: Proposal): MobileProposal {
+  return {
+    id: p.id,
+    chainId: p.chainId,
+    gate: p.gate,
+    nonce: p.nonce,
+    call: p.call,
+    action: p.action,
+    deadline: p.deadline,
+    status: p.status,
+    ...(p.txHash ? { txHash: p.txHash } : {}),
+    ...(p.error ? { error: p.error } : {}),
   };
 }

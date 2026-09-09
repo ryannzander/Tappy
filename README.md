@@ -24,7 +24,7 @@ Neither key can move funds alone.
 
 | Path | What it is |
 |---|---|
-| `apps/web` | Next.js chat app, wallet dashboard, mock shop, agent loop, relayer (T3 stack) |
+| `apps/hub` | API only: agent loop, proposal store, relayer, the iOS and bridge surfaces (T3 stack) |
 | `apps/bridge` | Node process on the laptop: talks to the Flipper over USB, holds the human key (v1) |
 | `apps/mobile` | React Native client — placeholder, not started |
 | `packages/protocol` | Shared types, EIP-712 digest, the mock signer, the frozen test vector |
@@ -69,12 +69,12 @@ terminal. Two thirds of the project is built against it.
 
 | | Workstream | Owner | Start here |
 |---|---|---|---|
-| A | contracts, protocol, deploys | @IGanjali | [brief](docs/workstreams/contracts.md) · [issue #4](https://github.com/ryannzander/FlippyTheDolphin/issues/4) |
-| B | web app, agent loop, shop | @ryannzander | [brief](docs/workstreams/app.md) · [issue #2](https://github.com/ryannzander/FlippyTheDolphin/issues/2) |
-| C | Flipper + bridge | @AnshuPlayz17 | [brief](docs/workstreams/device.md) · [issue #1](https://github.com/ryannzander/FlippyTheDolphin/issues/1) |
+| A | contracts, protocol, deploys | @IGanjali | [brief](docs/workstreams/contracts.md) · [issue #4](https://github.com/ryannzander/Tappy/issues/4) |
+| B | iOS app, hub, agent loop | @ryannzander | [brief](docs/workstreams/app.md) · [issue #2](https://github.com/ryannzander/Tappy/issues/2) |
+| C | Flipper + bridge | @AnshuPlayz17 | [brief](docs/workstreams/device.md) · [issue #1](https://github.com/ryannzander/Tappy/issues/1) |
 
 Three issues are labelled `blocker` and should be picked up in hour one. Everything else is
-labelled by milestone on the [issue board](https://github.com/ryannzander/FlippyTheDolphin/issues).
+labelled by milestone on the [issue board](https://github.com/ryannzander/Tappy/issues).
 
 ## Where to start reading
 
