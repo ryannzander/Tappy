@@ -134,10 +134,10 @@ struct MainTabs: View {
             }
             .frame(maxHeight: .infinity)
 
-            bar
+            if !state.keyboardUp { bar.transition(.move(edge: .bottom)) }
         }
         .background(Theme.bg)
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .animation(.easeOut(duration: 0.22), value: state.keyboardUp)
     }
 
     /// A real bar in the layout rather than an overlay floating on top — the previous version

@@ -48,6 +48,9 @@ final class AppState: ObservableObject {
     /// Which tab is showing. Lives here, not in the view, so a wallet button can hand the user
     /// to the chat where its answer will actually appear.
     @Published var tab = 0
+    /// The tab bar steps aside while typing. Without this the keyboard sits on top of the
+    /// composer and the text box becomes unreachable at the bottom of a long conversation.
+    @Published var keyboardUp = false
 
     struct Bubble: Identifiable {
         let id = UUID()

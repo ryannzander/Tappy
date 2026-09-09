@@ -4,6 +4,7 @@ import TappyKit
 struct ChatView: View {
     @EnvironmentObject private var state: AppState
     @State private var draft = ""
+    @FocusState private var typing: Bool
 
     private let suggestions: [(String, String)] = [
         ("Pay Vitalik $10", "from your recipients"),
@@ -54,13 +55,20 @@ struct ChatView: View {
                         PendingCard(proposal: proposal, rate: state.rate).id(proposal.id)
                     }
                     if state.busy { TypingDots() }
+                    Color.clear.frame(height: 1).id(bottomAnchor)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: state.transcript.count) { _, _ in
-                withAnimation { proxy.scrollTo(state.transcript.last?.id, anchor: .bottom) }
+                withAnimation { proxy.scrollTo(bottomAnchor, anchor: .bottom) }
+            }
+            .onChange(of: typing) { _, focused in
+                state.keyboardUp = focused
+                guard focused else { return }
+                // Opening the keyboard should reveal the newest message, not hide it.
+                withAnimation { proxy.scrollTo(bottomAnchor, anchor: .bottom) }
             }
         }
     }
@@ -94,7 +102,10 @@ struct ChatView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 16))
                 .foregroundStyle(Theme.ink)
+                .focused($typing)
                 .lineLimit(1...5)
+                .submitLabel(.send)
+                .onSubmit(submit)
 
             Button(action: submit) {
                 Image(systemName: "arrow.up")
@@ -110,8 +121,12 @@ struct ChatView: View {
         .padding(.vertical, 8)
         .background(Theme.surface, in: Capsule())
         .padding(.horizontal, 16)
-        .padding(.bottom, 10)
+        .padding(.bottom, state.keyboardUp ? 8 : 10)
     }
+
+    /// A zero-height marker at the end of the list. Scrolling to the last bubble stops short
+    /// when a proposal card follows it; scrolling to the end never does.
+    private var bottomAnchor: String { "bottom" }
 
     private func submit() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
