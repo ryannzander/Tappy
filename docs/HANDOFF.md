@@ -32,7 +32,7 @@ pnpm typecheck
 | `packages/contracts` | **Working.** `FlippyGate` + mocks, 13 tests, deploy script, ABI export. Not deployed anywhere yet. |
 | `apps/bridge` | **Written, never run against hardware.** Serial CLI client and `FlipperHumanSigner` compile and typecheck. Untested on a real Flipper. |
 | `device/flippy-js` | **Written, never run.** Same caveat. |
-| `apps/web` | **T3 scaffold only.** `src/server/agent/` and `src/server/flippy/` hold READMEs describing what goes there, not code. |
+| `apps/hub` | **T3 scaffold only.** `src/server/agent/` and `src/server/flippy/` hold READMEs describing what goes there, not code. |
 | `apps/mobile`, `device/flippy-c` | READMEs only. Deliberately not started. |
 
 Nothing is deployed to any chain. No `.env` has real values in it yet.

@@ -24,7 +24,7 @@ Neither key can move funds alone.
 
 | Path | What it is |
 |---|---|
-| `apps/web` | Next.js chat app, wallet dashboard, mock shop, agent loop, relayer (T3 stack) |
+| `apps/hub` | API only: agent loop, proposal store, relayer, the iOS and bridge surfaces (T3 stack) |
 | `apps/bridge` | Node process on the laptop: talks to the Flipper over USB, holds the human key (v1) |
 | `apps/mobile` | React Native client — placeholder, not started |
 | `packages/protocol` | Shared types, EIP-712 digest, the mock signer, the frozen test vector |

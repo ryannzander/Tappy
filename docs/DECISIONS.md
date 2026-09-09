@@ -15,3 +15,11 @@ say so in the group chat and change this file in the same PR as the code.
 | 8 | "What you see is what you sign" deferred to v2 | The device renders a summary the laptop sends. Honest about it in the README rather than implying otherwise. | 2026-09-04 |
 | 9 | T3 stack for the web app | Team strength, one deploy for chat + dashboard + shop, and tRPC gives the React Native client the same typed API later. | 2026-09-04 |
 | 10 | The attack scene is never cut | It is the eight seconds that make the physical step the point rather than an accessory. | 2026-09-04 |
+| 11 | The iPhone is the primary approval device; the Flipper is the second | The Secure Enclave gives custody the Flipper's JS app could not, and the phone is a screen and a CPU we already trust. | 2026-09-08 |
+| 12 | The human key is P-256 in the Secure Enclave, verified on-chain by EIP-7951 | Makes "the key cannot leave the device" literally true and provable on-chain. Was impossible when #1 was written. | 2026-09-08 |
+| 13 | Reverses #8 — "what you see is what you sign" ships in v1 | Infeasible on the Flipper, a day's work on the iPhone. The phone recomputes the digest and will not sign a mismatch. | 2026-09-08 |
+| 14 | Narrows #9 — T3 stays, as an API with no pages, renamed `apps/hub` | The client is the iOS app. A web UI is out of scope. | 2026-09-08 |
+| 15 | No sessions, no spending limits, no autonomous trading | The product is a chat bot that proposes one transaction at a time and a human who approves each one. | 2026-09-08 |
+| 16 | The mock shop and `propose_buy` are dropped | They needed a web surface. `send` and `swap` carry the demo, including the attack scene. | 2026-09-08 |
+
+Superseded by these: #1 (partly), #8, #9. Still binding: #2, #3, #4, #5, #6, #10.
