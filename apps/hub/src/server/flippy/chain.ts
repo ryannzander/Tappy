@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   createPublicClient,
   createWalletClient,
@@ -39,16 +40,29 @@ let cached: Deployment | undefined;
 
 export function deployment(): Deployment {
   if (cached) return cached;
-  const path = new URL("../../../../../packages/contracts/deployments/sepolia.json", import.meta.url);
-  try {
-    cached = JSON.parse(readFileSync(path, "utf8")) as Deployment;
-  } catch {
-    throw new Error(
-      "packages/contracts/deployments/sepolia.json is missing. Deploy the gate first:\n" +
-        "  cd packages/contracts && forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast",
-    );
+
+  // Resolved from cwd, not import.meta.url: webpack rewrites module URLs, so an import.meta
+  // path silently points somewhere that does not exist once this is bundled. Next runs with
+  // cwd at apps/hub, but tolerate being invoked from the repo root too.
+  const candidates = [
+    resolve(process.cwd(), "../../packages/contracts/deployments/sepolia.json"),
+    resolve(process.cwd(), "packages/contracts/deployments/sepolia.json"),
+  ];
+
+  for (const path of candidates) {
+    try {
+      cached = JSON.parse(readFileSync(path, "utf8")) as Deployment;
+      return cached;
+    } catch {
+      // try the next one
+    }
   }
-  return cached;
+
+  throw new Error(
+    `Could not read the deployment. Looked in:\n  ${candidates.join("\n  ")}\n` +
+      "Deploy the gate first:\n" +
+      "  cd packages/contracts && forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast",
+  );
 }
 
 export const publicClient = () =>

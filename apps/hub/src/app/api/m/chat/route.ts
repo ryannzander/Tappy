@@ -17,6 +17,14 @@ export async function POST(req: Request) {
     .safeParse(await req.json().catch(() => null));
   if (!parsed.success) return fail("expected { text }");
 
+  if (!process.env.OPENAI_API_KEY) {
+    return fail(
+      "OPENAI_API_KEY is not set, so the agent cannot run. Add it to apps/hub/.env and restart. " +
+        "Everything else — the wallet, approvals, the relayer — works without it.",
+      503,
+    );
+  }
+
   try {
     const { text, proposalIds } = await runTurn(parsed.data.text);
     return json({
