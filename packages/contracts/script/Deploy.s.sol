@@ -20,7 +20,8 @@ contract Deploy is Script {
 
         vm.startBroadcast(deployerKey);
 
-        FlippyGate gate = new FlippyGate(agent, human);
+        // Flipper-only for now; Task 6 wires up the phone's P-256 key and the verifier.
+        FlippyGate gate = new FlippyGate(agent, human, bytes32(0), bytes32(0), address(0));
         MockToken token = new MockToken();
         MockSwap swap = new MockSwap(token);
 

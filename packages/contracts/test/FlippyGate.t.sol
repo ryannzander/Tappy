@@ -40,7 +40,7 @@ contract FlippyGateTest is Test {
     function setUp() public {
         agent = vm.addr(agentKey);
         human = vm.addr(humanKey);
-        gate = new FlippyGate(agent, human);
+        gate = new FlippyGate(agent, human, bytes32(0), bytes32(0), address(0));
         token = new MockToken();
         swap = new MockSwap(token);
         callTarget = new CallTarget();
@@ -163,8 +163,8 @@ contract FlippyGateTest is Test {
 
     function test_constructor_rejects_zero_addresses() public {
         vm.expectRevert(FlippyGate.ZeroAddress.selector);
-        new FlippyGate(address(0), human);
-        vm.expectRevert(FlippyGate.ZeroAddress.selector);
-        new FlippyGate(agent, address(0));
+        new FlippyGate(address(0), human, bytes32(0), bytes32(0), address(0));
+        vm.expectRevert(FlippyGate.NoHumanAuthority.selector);
+        new FlippyGate(agent, address(0), bytes32(0), bytes32(0), address(0));
     }
 }
