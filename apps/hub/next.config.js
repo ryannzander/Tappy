@@ -21,8 +21,10 @@ function loadRootEnv() {
   for (const line of text.split("\n")) {
     const match = /^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/i.exec(line);
     if (!match) continue;
-    const [, key, rawValue] = match;
-    if (process.env[key]) continue;
+    const key = match[1];
+    const rawValue = match[2];
+    // noUncheckedIndexedAccess makes these possibly-undefined; a malformed line is skipped.
+    if (!key || rawValue === undefined || process.env[key]) continue;
     process.env[key] = rawValue.trim().replace(/^["']|["']$/g, "");
   }
 }
