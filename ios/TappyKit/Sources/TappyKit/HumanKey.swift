@@ -15,13 +15,43 @@ public enum HumanKeyError: Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .enclaveUnavailable:
-            return "This device has no Secure Enclave. The Simulator never does — run on a real iPhone."
+            return "This device has no Secure Enclave. Run on a real iPhone."
         case .keychainFailure(let status):
             return "Keychain error \(status)"
         case .noKey:
             return "No key has been generated yet"
         }
     }
+}
+
+/// LocalAuthentication reports almost everything as "Authentication failed", which tells you
+/// nothing and is impossible to act on. These are the cases that actually happen, with the fix
+/// in the message — a demo that fails silently at the biometric is a demo that is over.
+public func readableAuthError(_ error: Error) -> String {
+    if let la = error as? LAError {
+        switch la.code {
+        case .biometryNotEnrolled:
+            return "No Face ID is enrolled. On Simulator: Features ▸ Face ID ▸ Enrolled. On iPhone: set up Face ID in Settings."
+        case .passcodeNotSet:
+            return "This device has no passcode. The key requires one — set a passcode in Settings, then try again."
+        case .biometryNotAvailable:
+            return "Face ID is unavailable to this app. Check that NSFaceIDUsageDescription is in Info.plist."
+        case .biometryLockout:
+            return "Face ID is locked out after too many failures. Unlock the device with its passcode first."
+        case .userCancel, .appCancel, .systemCancel:
+            return "Cancelled."
+        case .authenticationFailed:
+            return "Face ID did not match. On Simulator use Features ▸ Face ID ▸ Matching Face."
+        default:
+            return "Face ID error \(la.code.rawValue): \(la.localizedDescription)"
+        }
+    }
+    let ns = error as NSError
+    // -25293 is errSecAuthFailed, which the Enclave returns when the ACL cannot be satisfied.
+    if ns.code == -25293 {
+        return "The Secure Enclave refused to use the key. This usually means the device passcode or enrolled face changed since it was created — delete and reinstall the app to create a fresh key."
+    }
+    return error.localizedDescription
 }
 
 public enum HumanKeySigning {
@@ -80,7 +110,15 @@ public struct EnclaveHumanKey: HumanKey {
         else {
             throw error!.takeRetainedValue() as Error
         }
-        key = try SecureEnclave.P256.Signing.PrivateKey(accessControl: access)
+        do {
+            key = try SecureEnclave.P256.Signing.PrivateKey(accessControl: access)
+        } catch {
+            // Rethrow with a message that names the fix rather than "Authentication failed".
+            throw NSError(
+                domain: "Tappy", code: (error as NSError).code,
+                userInfo: [NSLocalizedDescriptionKey: readableAuthError(error)]
+            )
+        }
         try Self.storeBlob(key.dataRepresentation)
     }
 
@@ -92,7 +130,14 @@ public struct EnclaveHumanKey: HumanKey {
             dataRepresentation: key.dataRepresentation,
             authenticationContext: context
         )
-        return try authed.signature(for: digest).rawRepresentation
+        do {
+            return try authed.signature(for: digest).rawRepresentation
+        } catch {
+            throw NSError(
+                domain: "Tappy", code: (error as NSError).code,
+                userInfo: [NSLocalizedDescriptionKey: readableAuthError(error)]
+            )
+        }
     }
 
     private static func loadBlob() throws -> Data {
