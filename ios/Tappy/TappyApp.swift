@@ -7,7 +7,21 @@ struct TappyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView().environmentObject(state).preferredColorScheme(.light)
+            RootView()
+                .environmentObject(state)
+                .preferredColorScheme(.light)
+                .task {
+                    #if DEBUG
+                    // Lets a screenshot reach the real screens without a device or a face.
+                    // Debug-only and opt-in: it fabricates a software key and never touches
+                    // the Enclave, so it can never be mistaken for the real approval path.
+                    if ProcessInfo.processInfo.arguments.contains("-uiPreview") {
+                        // `-tab N` is picked up by UserDefaults' argument domain for free.
+                        state.tab = UserDefaults.standard.integer(forKey: "tab")
+                        await state.previewSetUp()
+                    }
+                    #endif
+                }
         }
     }
 }
@@ -26,6 +40,11 @@ final class AppState: ObservableObject {
     @Published var recent: [MobileProposal] = []
     @Published var banner: String?
     @Published var busy = false
+    /// Shown once a proposal settles, so a send ends with a receipt rather than a silent list.
+    @Published var settled: MobileProposal?
+    let contacts = ContactStore()
+    /// Remembers who a proposal was for, so the receipt can say a name instead of hex.
+    private var payee: [String: String] = [:]
     /// Which tab is showing. Lives here, not in the view, so a wallet button can hand the user
     /// to the chat where its answer will actually appear.
     @Published var tab = 0
@@ -41,10 +60,35 @@ final class AppState: ObservableObject {
     /// Dollars per ETH, from the hub. Zero until the first wallet fetch lands.
     var rate: Double { wallet?.ethUsd ?? 0 }
 
-    /// Sends a message AND shows the chat, so a tap on the wallet screen visibly does something.
+    /// Sends a message AND shows the chat, so a tap elsewhere visibly does something.
     func ask(_ text: String) async {
-        tab = 0
+        tab = 1
         await send(text)
+    }
+
+    /// Fired from a recipient. Writes the sentence; the agent proposes; your face decides.
+    func payAmount(_ dollars: Double, to contact: Contact) async {
+        await pay(dollars, to: contact)
+    }
+
+    /// The Pay button. It does not move money — it asks the agent to propose, which is the
+    /// whole product: a button that requests, and a face that approves.
+    func pay(_ dollars: Double, to contact: Contact) async {
+        pendingPayeeName = contact.name
+        await ask("Send $\(String(format: "%.2f", dollars)) to \(contact.name) at \(contact.address).")
+    }
+
+    private var pendingPayeeName: String?
+
+    func addContact(_ contact: Contact) {
+        contacts.add(contact)
+        Task { try? await client().syncContacts(contacts.contacts) }
+    }
+
+    func name(for proposal: MobileProposal) -> String? {
+        if let remembered = payee[proposal.id] { return remembered }
+        let target = proposal.action.counterparty.lowercased()
+        return contacts.contacts.first { target.contains($0.address.lowercased()) }?.name
     }
 
     var keyStatus: String {
@@ -61,6 +105,19 @@ final class AppState: ObservableObject {
     /// falls back to software only where there is no Enclave to use — and says which, loudly,
     /// because a demo that silently downgrades its own security claim is worse than one that
     /// fails.
+    #if DEBUG
+    /// Screenshot path: a software key and a real hub fetch, so layouts can be checked without
+    /// a device or a face. Never touches the Enclave, so it cannot be confused for the real thing.
+    func previewSetUp() async {
+        key = try? SoftwareHumanKey()
+        guard let hub = try? client() else { return }
+        registration = try? await hub.register(publicKey: key?.publicKey ?? Data(),
+                                               kind: .software, label: "Preview")
+        wallet = try? await hub.wallet()
+        try? await hub.syncContacts(contacts.contacts)
+    }
+    #endif
+
     func setUp() async {
         busy = true
         defer { busy = false }
@@ -78,6 +135,7 @@ final class AppState: ObservableObject {
                 label: UIDevice.current.name
             )
             wallet = try await hub.wallet()
+            try? await hub.syncContacts(contacts.contacts)
             if let warning = registration?.warning { banner = warning }
             startPolling()
         } catch {
@@ -165,7 +223,10 @@ final class AppState: ObservableObject {
         }
         if let current = pending, let fresh = try? await hub.proposal(current.id) {
             await LiveActivity.update(fresh, rate: rate)
-            if fresh.isSettled { pending = nil }
+            if fresh.isSettled {
+                pending = nil
+                settled = fresh
+            }
         }
         await refreshStatusesOnly(hub)
     }
@@ -186,6 +247,10 @@ final class AppState: ObservableObject {
             if let proposal = try? await hub.proposal(id) {
                 recent.insert(proposal, at: 0)
                 if proposal.isPending {
+                    if let name = pendingPayeeName {
+                        payee[proposal.id] = name
+                        pendingPayeeName = nil
+                    }
                     pending = proposal
                     LiveActivity.start(proposal, rate: rate)
                 }

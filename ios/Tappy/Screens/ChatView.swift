@@ -4,10 +4,9 @@ import TappyKit
 struct ChatView: View {
     @EnvironmentObject private var state: AppState
     @State private var draft = ""
-    @FocusState private var composerFocused: Bool
 
     private let suggestions: [(String, String)] = [
-        ("Send $25", "to an address"),
+        ("Pay Vitalik $10", "from your recipients"),
         ("Buy $25 of FLIP", "on the demo exchange"),
         ("What's in my wallet?", "balance and keys"),
         ("Tell me about FLIP", "read the token listing"),
@@ -27,44 +26,36 @@ struct ChatView: View {
 
     private var header: some View {
         HStack {
-            Spacer().frame(width: 38)
+            Text("Ask Tappy").font(.system(size: 24, weight: .bold)).foregroundStyle(Theme.ink)
             Spacer()
-
-            HStack(spacing: 4) {
-                TappyMark(size: 18)
-                Text("tappy").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.ink)
-            }
-
-            Spacer()
-
-            Button {
-                state.transcript.removeAll()
-            } label: {
-                Image(systemName: "square.and.pencil")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Theme.ink)
-                    .frame(width: 38, height: 38)
-                    .liquidGlass(.circle)
+            if !state.transcript.isEmpty {
+                Button { state.transcript.removeAll() } label: {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Theme.ink)
+                        .frame(width: 40, height: 40)
+                        .background(Theme.surface, in: Circle())
+                }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 6)
+        .padding(.horizontal, 20)
+        .padding(.top, 6)
+        .padding(.bottom, 10)
     }
 
     private var transcript: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 18) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     ForEach(state.transcript) { bubble in
                         BubbleView(bubble: bubble).id(bubble.id)
                     }
-                    ForEach(state.recent) { proposal in
-                        ProposalCard(proposal: proposal, rate: state.rate).id(proposal.id)
+                    ForEach(state.recent.filter(\.isPending)) { proposal in
+                        PendingCard(proposal: proposal, rate: state.rate).id(proposal.id)
                     }
                     if state.busy { TypingDots() }
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 12)
+                .padding(.horizontal, 20)
                 .padding(.bottom, 8)
             }
             .scrollDismissesKeyboard(.interactively)
@@ -78,57 +69,47 @@ struct ChatView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(suggestions, id: \.0) { title, subtitle in
-                    Button {
-                        Task { await state.ask(title) }
-                    } label: {
+                    Button { Task { await state.ask(title) } } label: {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(title)
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(Theme.ink)
-                            Text(subtitle)
-                                .font(.system(size: 14))
-                                .foregroundStyle(Theme.dim)
+                            Text(subtitle).font(.system(size: 14)).foregroundStyle(Theme.dim)
                         }
                         .multilineTextAlignment(.leading)
                         .padding(14)
-                        .frame(width: 210, alignment: .leading)
+                        .frame(width: 200, alignment: .leading)
                         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18))
                     }
                 }
             }
-            .padding(.horizontal, 18)
+            .padding(.horizontal, 20)
         }
         .padding(.bottom, 10)
     }
 
     private var composer: some View {
         HStack(spacing: 10) {
-            Image(systemName: "plus")
-                .font(.system(size: 19, weight: .medium))
-                .foregroundStyle(Theme.ink)
-
-            TextField("Ask Tappy", text: $draft, axis: .vertical)
+            TextField("Ask Tappy to move money", text: $draft, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.system(size: 17))
+                .font(.system(size: 16))
                 .foregroundStyle(Theme.ink)
-                .focused($composerFocused)
                 .lineLimit(1...5)
 
             Button(action: submit) {
-                Image(systemName: draft.isEmpty ? "waveform" : "arrow.up")
+                Image(systemName: "arrow.up")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(draft.isEmpty ? Theme.ink : Theme.accent, in: Circle())
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 38, height: 38)
+                    .background(draft.isEmpty ? Theme.surfaceDeep : Theme.lime, in: Circle())
             }
             .disabled(state.busy || draft.isEmpty)
         }
+        .padding(.leading, 20)
+        .padding(.trailing, 8)
+        .padding(.vertical, 8)
+        .background(Theme.surface, in: Capsule())
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .liquidGlass(.capsule)
-        .overlay(Capsule().stroke(Theme.hairline.opacity(0.7), lineWidth: 1))
-        .shadow(color: .black.opacity(0.06), radius: 12, y: 3)
-        .padding(.horizontal, 14)
         .padding(.bottom, 10)
     }
 
@@ -148,16 +129,15 @@ struct BubbleView: View {
             if bubble.mine {
                 Spacer(minLength: 50)
                 Text(bubble.text)
-                    .font(.system(size: 17))
+                    .font(.system(size: 16))
                     .foregroundStyle(Theme.ink)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 11)
-                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20))
+                    .background(Theme.lime, in: RoundedRectangle(cornerRadius: 20))
             } else {
-                // The assistant speaks in plain text, not a bubble — it is the page, not a guest
-                // on it. Same shape as every chat app anyone already uses.
+                // The assistant is the page, not a guest on it — plain text, no bubble.
                 Text(bubble.text)
-                    .font(.system(size: 17))
+                    .font(.system(size: 16))
                     .foregroundStyle(Theme.ink)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -168,7 +148,7 @@ struct BubbleView: View {
 }
 
 struct TypingDots: View {
-    @State private var phase = 0.0
+    @State private var on = false
 
     var body: some View {
         HStack(spacing: 5) {
@@ -176,81 +156,39 @@ struct TypingDots: View {
                 Circle()
                     .fill(Theme.dim)
                     .frame(width: 7, height: 7)
-                    .opacity(phase == Double(i) ? 1 : 0.3)
+                    .opacity(on ? 1 : 0.25)
+                    .animation(
+                        .easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.15),
+                        value: on
+                    )
             }
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.45).repeatForever()) { phase = 2 }
-        }
+        .onAppear { on = true }
     }
 }
 
-struct ProposalCard: View {
+/// Shown inline while a proposal waits on a face. Settled ones live on Home, not here — the
+/// chat should not become a ledger.
+struct PendingCard: View {
     let proposal: MobileProposal
     let rate: Double
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(proposal.action.verb)
-                    .font(.system(size: 11, weight: .bold))
-                    .tracking(1.4)
-                    .foregroundStyle(Theme.accent)
-                Spacer()
-                HStack(spacing: 5) {
-                    Circle().fill(statusColor).frame(width: 6, height: 6)
-                    Text(statusLabel)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(statusColor)
-                }
+        HStack(spacing: 14) {
+            CircleGlyph(systemName: "faceid", filled: Theme.lime)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Waiting for you")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                Text(Format.usd(wei: proposal.action.amountWei, rate: rate) + " · "
+                     + Format.short(proposal.action.counterparty, lead: 6, tail: 4))
+                    .font(.system(size: 14))
+                    .foregroundStyle(Theme.dim)
             }
-
-            Text(Format.usd(wei: proposal.action.amountWei, rate: rate))
-                .font(.system(size: 26, weight: .bold, design: .rounded))
-                .foregroundStyle(Theme.ink)
-            Text(Format.eth(wei: proposal.action.amountWei))
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.dim)
-
-            Text(Format.short(proposal.action.counterparty, lead: 12, tail: 6))
-                .font(.system(size: 13, design: .monospaced))
-                .foregroundStyle(Theme.dim)
-
-            if let explorer = proposal.explorer, let url = URL(string: explorer) {
-                Link(destination: url) {
-                    HStack(spacing: 4) {
-                        Text("View on Etherscan")
-                        Image(systemName: "arrow.up.right")
-                    }
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Theme.accent)
-                }
-            }
-            if let error = proposal.error {
-                Text(error).font(.caption2).foregroundStyle(Theme.down)
-            }
+            Spacer()
         }
-        .padding(16)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20))
-    }
-
-    private var statusLabel: String {
-        switch proposal.status {
-        case "PENDING_HUMAN": return "Waiting for you"
-        case "SUBMITTED": return "Submitting"
-        case "EXECUTED": return "Done"
-        case "REJECTED": return "Declined"
-        case "EXPIRED": return "Expired"
-        default: return "Failed"
-        }
-    }
-
-    private var statusColor: Color {
-        switch proposal.status {
-        case "EXECUTED": return Theme.up
-        case "REJECTED", "FAILED", "EXPIRED": return Theme.down
-        default: return .orange
-        }
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18))
     }
 }

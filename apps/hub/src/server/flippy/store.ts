@@ -60,6 +60,28 @@ export function getDevice(id: string): Device | undefined {
   return devices.get(id);
 }
 
+/**
+ * Mirrored from the phone. Only ever used to turn a name into an address for the agent — the
+ * phone still re-derives the digest of whatever comes back, so a bad entry here cannot make
+ * anyone sign something they did not read.
+ */
+export interface Contact {
+  id: string;
+  name: string;
+  handle: string;
+  address: string;
+}
+
+let contacts: Contact[] = [];
+
+export function setContacts(next: Contact[]): void {
+  contacts = next;
+}
+
+export function listContacts(): Contact[] {
+  return contacts;
+}
+
 export function addMessage(m: ChatMessage): void {
   messages.push(m);
 }

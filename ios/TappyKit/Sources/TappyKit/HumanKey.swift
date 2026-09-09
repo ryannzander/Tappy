@@ -43,15 +43,28 @@ public func readableAuthError(_ error: Error) -> String {
         case .authenticationFailed:
             return "Face ID did not match. On Simulator use Features ▸ Face ID ▸ Matching Face."
         default:
-            return "Face ID error \(la.code.rawValue): \(la.localizedDescription)"
+            // LocalAuthentication returns codes that are not in LAError.Code — -1020 shows up
+            // when the Secure Enclave refuses because no biometric is enrolled. Say the thing
+            // that fixes it rather than printing a number nobody can look up.
+            return enrollmentHint("Face ID could not be used (error \(la.code.rawValue)).")
         }
     }
     let ns = error as NSError
     // -25293 is errSecAuthFailed, which the Enclave returns when the ACL cannot be satisfied.
     if ns.code == -25293 {
-        return "The Secure Enclave refused to use the key. This usually means the device passcode or enrolled face changed since it was created — delete and reinstall the app to create a fresh key."
+        return "The Secure Enclave refused the key. The passcode or enrolled face probably changed since it was created — delete and reinstall the app to make a fresh one."
+    }
+    if ns.domain.contains("LocalAuthentication") || ns.code == -1020 {
+        return enrollmentHint("The Secure Enclave refused (error \(ns.code)).")
     }
     return error.localizedDescription
+}
+
+/// Every route to a failed Enclave key on a fresh device comes down to the same two setup steps,
+/// so say them rather than making someone search an error number.
+private func enrollmentHint(_ lead: String) -> String {
+    lead + " On Simulator: Features ▸ Face ID ▸ Enrolled, then relaunch. "
+        + "On iPhone: set a device passcode and enrol Face ID in Settings."
 }
 
 public enum HumanKeySigning {

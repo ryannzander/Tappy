@@ -142,6 +142,15 @@ public actor HubClient {
         )
     }
 
+    /// Mirrors the phone's contacts so the agent can turn "pay Jake $20" into an address.
+    public func syncContacts(_ contacts: [Contact]) async throws {
+        var request = URLRequest(url: base.appendingPathComponent("api/m/contacts"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(["contacts": contacts])
+        _ = try await session.data(for: request)
+    }
+
     public func send(message: String) async throws -> ChatReply {
         try await post("api/m/chat", ["text": message])
     }
