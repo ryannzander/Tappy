@@ -17,14 +17,6 @@ export const actionSchema = z.discriminatedUnion("kind", [
     minBuy: bigintish,
     tokenOut: addressSchema,
   }),
-  z.object({
-    kind: z.literal("buy"),
-    merchant: addressSchema,
-    valueWei: bigintish,
-    invoiceId: z.string(),
-    itemName: z.string(),
-    shopUrl: z.string(),
-  }),
 ]);
 export type Action = z.infer<typeof actionSchema>;
 
@@ -81,7 +73,7 @@ export type Proposal = z.infer<typeof proposalSchema>;
 export const proposalViewSchema = z.object({
   id: hexSchema,
   short: z.string(),
-  action: z.enum(["SEND", "SWAP", "BUY"]),
+  action: z.enum(["SEND", "SWAP"]),
   amount: z.string(),
   counterparty: z.string(),
   chain: z.string(),
@@ -150,3 +142,46 @@ export const flipperResponseSchema = z.object({
   at: z.number(),
 });
 export type FlipperResponse = z.infer<typeof flipperResponseSchema>;
+
+/* ---- The iOS surface ------------------------------------------------------ */
+
+export const humanKeyKindSchema = z.enum(["p256-enclave", "p256-software", "secp256k1"]);
+export type HumanKeyKind = z.infer<typeof humanKeyKindSchema>;
+
+/**
+ * Everything the phone needs to independently verify a proposal and render it.
+ * Deliberately carries the raw call: the phone recomputes the digest rather than
+ * trusting the id the hub sent. Deliberately omits agentSig — the phone has no use
+ * for it, and a signature it does not need is a signature it cannot leak.
+ */
+export const mobileProposalSchema = z.object({
+  id: hexSchema,
+  chainId: z.number(),
+  gate: addressSchema,
+  nonce: bigintish,
+  call: callSchema,
+  action: actionSchema,
+  deadline: z.number(),
+  status: proposalStatusSchema,
+  txHash: hexSchema.optional(),
+  error: z.string().optional(),
+});
+export type MobileProposal = z.infer<typeof mobileProposalSchema>;
+
+/** A registered approval device. `publicKey` is 64 bytes qx‖qy for P-256, a 20-byte address for secp256k1. */
+export const deviceSchema = z.object({
+  id: z.string(),
+  kind: humanKeyKindSchema,
+  publicKey: hexSchema,
+  label: z.string(),
+  registeredAt: z.number(),
+});
+export type Device = z.infer<typeof deviceSchema>;
+
+/** A physical NFC token the hub recognises. The tag is a trigger, not a secret. */
+export const stationSchema = z.object({
+  stationId: z.string(),
+  label: z.string(),
+  tagUid: hexSchema.optional(),
+});
+export type Station = z.infer<typeof stationSchema>;

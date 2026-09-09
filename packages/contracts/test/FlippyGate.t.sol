@@ -5,7 +5,6 @@ import {Test} from "forge-std/Test.sol";
 import {FlippyGate} from "../src/FlippyGate.sol";
 import {MockToken} from "../src/MockToken.sol";
 import {MockSwap} from "../src/MockSwap.sol";
-import {MockMerchant} from "../src/MockMerchant.sol";
 
 contract Reverter {
     error Nope();
@@ -15,11 +14,21 @@ contract Reverter {
     }
 }
 
+/// @notice Minimal call-target fixture: proves execute() can carry arbitrary calldata
+/// to an arbitrary contract, not just move ETH or hit the two demo contracts above.
+contract CallTarget {
+    mapping(bytes32 invoiceId => uint256 paidWei) public paid;
+
+    function pay(bytes32 invoiceId) external payable {
+        paid[invoiceId] += msg.value;
+    }
+}
+
 contract FlippyGateTest is Test {
     FlippyGate gate;
     MockToken token;
     MockSwap swap;
-    MockMerchant merchant;
+    CallTarget callTarget;
 
     uint256 agentKey = 0xA11CE;
     uint256 humanKey = 0xB0B;
@@ -34,7 +43,7 @@ contract FlippyGateTest is Test {
         gate = new FlippyGate(agent, human);
         token = new MockToken();
         swap = new MockSwap(token);
-        merchant = new MockMerchant();
+        callTarget = new CallTarget();
         vm.deal(address(gate), 10 ether);
     }
 
@@ -75,12 +84,12 @@ contract FlippyGateTest is Test {
     function test_pays_a_merchant_invoice() public {
         uint256 deadline = block.timestamp + 600;
         bytes32 invoice = keccak256("inv-001");
-        bytes memory data = abi.encodeCall(MockMerchant.pay, (invoice));
-        bytes32 d = _digest(address(merchant), 0.01 ether, data, deadline);
+        bytes memory data = abi.encodeCall(CallTarget.pay, (invoice));
+        bytes32 d = _digest(address(callTarget), 0.01 ether, data, deadline);
 
-        gate.execute(address(merchant), 0.01 ether, data, deadline, _sign(agentKey, d), _sign(humanKey, d));
+        gate.execute(address(callTarget), 0.01 ether, data, deadline, _sign(agentKey, d), _sign(humanKey, d));
 
-        assertEq(merchant.paid(invoice), 0.01 ether);
+        assertEq(callTarget.paid(invoice), 0.01 ether);
     }
 
     function test_reverts_when_agent_signature_is_wrong() public {

@@ -1,6 +1,6 @@
 import { hashTypedData, keccak256, formatUnits } from "viem";
 import type { Address, Hex, TypedDataDomain } from "viem";
-import type { Action, Call, Proposal, ProposalView } from "./types.js";
+import type { Action, Call, MobileProposal, Proposal, ProposalView } from "./types.js";
 import { chainByKey, type ChainInfo } from "./chains.js";
 
 /**
@@ -67,9 +67,7 @@ export function toView(p: Pick<Proposal, "id" | "action" | "chainId">, chainKey:
   const [action, amount, counterparty] =
     a.kind === "send"
       ? (["SEND", amountLabel(a.valueWei, chain), shortHex(a.to)] as const)
-      : a.kind === "swap"
-        ? (["SWAP", amountLabel(a.sellWei, chain), `DEX ${shortHex(a.dex)}`] as const)
-        : (["BUY", amountLabel(a.valueWei, chain), `Shop: ${a.itemName}`] as const);
+      : (["SWAP", amountLabel(a.sellWei, chain), `DEX ${shortHex(a.dex)}`] as const);
 
   return {
     id: p.id,
@@ -79,5 +77,21 @@ export function toView(p: Pick<Proposal, "id" | "action" | "chainId">, chainKey:
     counterparty,
     chain: chain.name,
     digest: p.id,
+  };
+}
+
+/** Projects a Proposal onto exactly what the phone is allowed to see. */
+export function toMobileProposal(p: Proposal): MobileProposal {
+  return {
+    id: p.id,
+    chainId: p.chainId,
+    gate: p.gate,
+    nonce: p.nonce,
+    call: p.call,
+    action: p.action,
+    deadline: p.deadline,
+    status: p.status,
+    ...(p.txHash ? { txHash: p.txHash } : {}),
+    ...(p.error ? { error: p.error } : {}),
   };
 }

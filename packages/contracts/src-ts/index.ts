@@ -2,13 +2,11 @@
 import FlippyGateAbi from "../abi/FlippyGate.json" with { type: "json" };
 import MockTokenAbi from "../abi/MockToken.json" with { type: "json" };
 import MockSwapAbi from "../abi/MockSwap.json" with { type: "json" };
-import MockMerchantAbi from "../abi/MockMerchant.json" with { type: "json" };
 
-export const abis = { FlippyGate, MockToken, MockSwap, MockMerchant } as const;
+export const abis = { FlippyGate: FlippyGateAbi, MockToken: MockTokenAbi, MockSwap: MockSwapAbi } as const;
 export { FlippyGateAbi };
 export { MockTokenAbi };
 export { MockSwapAbi };
-export { MockMerchantAbi };
 
 export const deployments = {} as const;
 
