@@ -67,3 +67,30 @@ a button. The `HumanSigner` interface is unchanged either way.
 **Why it matters:** `packages/protocol/src/chains.ts` ships with `chainId: 0` and `chainByKey`
 throws on it, deliberately, so nobody deploys against a guess.
 **Answer:** _not yet looked up_
+
+---
+
+## 5. Is the EIP-7951 P256VERIFY precompile live on Sepolia? — Claude (Ryan Zander), 2026-09-09
+**Why it matters:** the human key is a Secure Enclave P-256 key. If the chain cannot verify a
+P-256 signature natively, FlippyGate must staticcall a Solidity verifier instead (~330k gas).
+**Answer:** ABSENT. Sepolia (chain id 11155111) has no code at `0x…0100` as of 2026-09-09; the
+`eth_call` succeeds and returns empty data rather than 32 bytes of 1 or 0. Fusaka's published
+scope was not sufficient evidence — measure, don't infer.
+**Evidence:** `pnpm --filter @flippy/contracts exec tsx script/checkP256.ts` against two
+independent Sepolia RPCs:
+- `https://ethereum-sepolia-rpc.publicnode.com` → `chain 11155111`, `returned 0x (empty)`,
+  `PRECOMPILE ABSENT — deploy the fallback verifier`.
+- `https://1rpc.io/sepolia` → same chain id, same empty result.
+(`https://rpc.sepolia.org` is dead — 404 on every request — and is not usable evidence either
+way; the script threw loudly on it instead of masking the failure, which is the desired
+behaviour.)
+`@noble/curves` p256 import path used: `@noble/curves/nist.js` (curves 2.4.0; v2's export map
+requires the `.js` suffix). `@noble/hashes` sha256 path: `@noble/hashes/sha2.js` (hashes 2.4.0,
+same reason). Also note for Task 3: `@noble/curves@2.x`'s `p256.sign()` returns a raw 64-byte
+compact `r || s` Uint8Array by default, not a `{r, s}` bigint object as in v1 — slice bytes
+directly instead of calling `.toString(16)` on `.r`/`.s`.
+**Consequence:** deploy with `P256_VERIFIER=<fallback verifier address>`, not `0x…0100`. Task 6's
+deploy inputs must point at a deployed Solidity P-256 verifier; Task 5's contract code is
+unaffected since the verifier is a constructor argument. Re-run this script after Fusaka's mainnet
+date confirms Sepolia's actual activation, since this result is a point-in-time measurement, not a
+permanent fact.
