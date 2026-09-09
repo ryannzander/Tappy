@@ -93,7 +93,7 @@ hub over HTTPS like any other client, and the approval path does not trust it.
             │                  │  → Flipper Zero (secp256k1)  │
             │                  └──────────────────────────────┘
             ▼
-      Sepolia · FlippyGate · MockToken · MockSwap
+      Sepolia · TappyGate · MockToken · MockSwap
 ```
 
 ### 2.1 Why the Secure Enclave works now
@@ -105,7 +105,7 @@ hub over HTTPS like any other client, and the approval path does not trust it.
   (`h ‖ r ‖ s ‖ qx ‖ qy`), 6,900 gas, returns 32 bytes of `1` on success and empty on failure.
   It never reverts. It shipped in the Fusaka hard fork, live on Sepolia 2025-10-14 and on mainnet
   2025-12-03.
-- Therefore `FlippyGate` can verify an Enclave signature directly, and the human key can be
+- Therefore `TappyGate` can verify an Enclave signature directly, and the human key can be
   generated inside the Enclave, never exported, and destroyed if the enrolled face changes.
 
 **Spike H1 (day 1, ten minutes):** confirm the precompile is live on the target RPC before any
@@ -131,7 +131,7 @@ argument. Record the result in `docs/spikes.md`.
    returns 64 bytes.
 8. `POST /api/m/proposals/:id/approve` with the signature. Hub verifies it off-chain first (loud
    failure beats a wasted transaction), then relays
-   `FlippyGate.execute(to, value, data, deadline, agentSig, humanSig)`.
+   `TappyGate.execute(to, value, data, deadline, agentSig, humanSig)`.
 9. Status `SUBMITTED` → `EXECUTED` or `FAILED`. A decline is `REJECTED`, posted with no signature.
    The app polls `GET /api/m/proposals/:id` once a second and renders the transition inline in the
    chat.
@@ -203,7 +203,7 @@ earns its keep for the Flipper and for tests.
 ### 3.2 The EIP-712 digest — unchanged and still frozen
 
 ```
-Domain: { name: "FlippyGate", version: "1", chainId, verifyingContract: gate }
+Domain: { name: "TappyGate", version: "1", chainId, verifyingContract: gate }
 Type:   Execute(uint256 nonce,address to,uint256 value,bytes data,uint256 deadline)
 ```
 
@@ -289,7 +289,7 @@ factor that looks identical to a real one is the silent failure this project exi
 ### 4.1 Shape
 
 ```solidity
-contract FlippyGate is EIP712 {
+contract TappyGate is EIP712 {
     address public immutable agent;          // secp256k1 — Privy server wallet or local key
     address public immutable humanK1;        // secp256k1 — the Flipper. may be address(0)
     bytes32 public immutable humanQx;        // P-256 — the iPhone Secure Enclave key
@@ -511,7 +511,7 @@ per the brief.
 |---|---|---|---|
 | **M0** | Repo reshaped | `apps/web` → `apps/hub`, UI deleted, `ios/` scaffolded, `pnpm typecheck` and `forge test` green | — |
 | **M1** | Precompile confirmed | Spike H1 result recorded; `p256.json` vector frozen; `forge test` proves a P-256 signature satisfies the gate | — |
-| **M2** | Gate on Sepolia | `FlippyGate` deployed with both human authorities; a scripted P-256 signature executes a transfer; Etherscan shows `Executed` | M1 |
+| **M2** | Gate on Sepolia | `TappyGate` deployed with both human authorities; a scripted P-256 signature executes a transfer; Etherscan shows `Executed` | M1 |
 | **M3** | **Enclave signature on-chain** | Tap a button in the iOS app, Face ID, and a transaction signed by the Secure Enclave lands on Sepolia. *The core loop, proven.* | M2 |
 | **M4** | Chat in the loop | "Send 0.01 to 0x…" in the app → Claude → proposal → Approval screen → Face ID → executed, all in-app | M3 |
 | **M5** | NFC | The approval screen waits for a real tap on the puck before Face ID | M4 + Apple enrolment |

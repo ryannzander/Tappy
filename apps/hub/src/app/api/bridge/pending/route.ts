@@ -1,6 +1,6 @@
-import { toView } from "@flippy/protocol";
-import { listProposals } from "~/server/flippy/store";
-import { json } from "~/server/flippy/json";
+import { toView } from "@tappy/protocol";
+import { listProposals } from "~/server/tappy/store";
+import { json } from "~/server/tappy/json";
 
 export const dynamic = "force-dynamic";
 

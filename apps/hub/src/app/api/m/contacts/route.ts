@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { addressSchema } from "@flippy/protocol";
-import { listContacts, setContacts } from "~/server/flippy/store";
-import { fail, json } from "~/server/flippy/json";
+import { addressSchema } from "@tappy/protocol";
+import { listContacts, setContacts } from "~/server/tappy/store";
+import { fail, json } from "~/server/tappy/json";
 
 export const dynamic = "force-dynamic";
 

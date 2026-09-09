@@ -1,7 +1,7 @@
-import { toMobileProposal } from "@flippy/protocol";
-import { getProposal } from "~/server/flippy/store";
-import { explorerTx } from "~/server/flippy/chain";
-import { fail, json } from "~/server/flippy/json";
+import { toMobileProposal } from "@tappy/protocol";
+import { getProposal } from "~/server/tappy/store";
+import { explorerTx } from "~/server/tappy/chain";
+import { fail, json } from "~/server/tappy/json";
 
 export const dynamic = "force-dynamic";
 

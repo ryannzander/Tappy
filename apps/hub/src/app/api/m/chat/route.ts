@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { runTurn } from "~/server/agent/loop";
-import { listMessages, listProposals } from "~/server/flippy/store";
-import { fail, json } from "~/server/flippy/json";
+import { listMessages, listProposals } from "~/server/tappy/store";
+import { fail, json } from "~/server/tappy/json";
 
 export const dynamic = "force-dynamic";
 /** A tool-calling turn on Opus can take a while; don't let the platform cut it short. */

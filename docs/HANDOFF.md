@@ -20,7 +20,7 @@ guessing.
 
 ```bash
 pnpm contracts:test                    # 13 tests
-pnpm --filter @flippy/protocol test    # 8 tests
+pnpm --filter @tappy/protocol test    # 8 tests
 pnpm typecheck
 ```
 
@@ -29,10 +29,10 @@ pnpm typecheck
 | | State |
 |---|---|
 | `packages/protocol` | **Working.** Types, EIP-712 digest, `HumanSigner`, `MockHumanSigner`, frozen vector. |
-| `packages/contracts` | **Working.** `FlippyGate` + mocks, 13 tests, deploy script, ABI export. Not deployed anywhere yet. |
+| `packages/contracts` | **Working.** `TappyGate` + mocks, 13 tests, deploy script, ABI export. Not deployed anywhere yet. |
 | `apps/bridge` | **Written, never run against hardware.** Serial CLI client and `FlipperHumanSigner` compile and typecheck. Untested on a real Flipper. |
 | `device/flippy-js` | **Written, never run.** Same caveat. |
-| `apps/hub` | **T3 scaffold only.** `src/server/agent/` and `src/server/flippy/` hold READMEs describing what goes there, not code. |
+| `apps/hub` | **T3 scaffold only.** `src/server/agent/` and `src/server/tappy/` hold READMEs describing what goes there, not code. |
 | `apps/mobile`, `device/flippy-c` | READMEs only. Deliberately not started. |
 
 Nothing is deployed to any chain. No `.env` has real values in it yet.
@@ -66,9 +66,9 @@ self-merge after 30 minutes if nobody looks.
 - **Never edit `packages/protocol/vectors/execute.json`.** It's the frozen proof that Solidity and
   TypeScript hash the same bytes. Change it and every signature breaks, and the symptom is an
   unhelpful "bad signature" that tells you nothing about the cause.
-- **Never copy an ABI or a shared type into an app.** Import from `@flippy/contracts` and
-  `@flippy/protocol`. A drifted copy is a silent revert.
-- **On boot, assert `FlippyGate.digestOf(...)` equals `proposalDigest(...)`** using the frozen
+- **Never copy an ABI or a shared type into an app.** Import from `@tappy/contracts` and
+  `@tappy/protocol`. A drifted copy is a silent revert.
+- **On boot, assert `TappyGate.digestOf(...)` equals `proposalDigest(...)`** using the frozen
   vector, and refuse to start if they differ. This one check is the difference between a
   five-minute bug and a five-hour one.
 - **The Flipper JS engine is mJS, not JavaScript.** No crypto, no bigint, no USB, no exceptions,

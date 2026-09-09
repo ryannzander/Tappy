@@ -12,7 +12,7 @@ settled — do not reopen those without being asked.
   proposal store, relayer, the iOS and bridge surfaces.
 - `apps/bridge` — Node process on the laptop with the Flipper. USB serial, holds the human key in v1.
 - `packages/protocol` — shared types, the EIP-712 digest, `HumanSigner`, `MockHumanSigner`.
-- `packages/contracts` — Foundry. `FlippyGate` is the 2-of-2 gate.
+- `packages/contracts` — Foundry. `TappyGate` is the 2-of-2 gate.
 - `device/flippy-js` — the Flipper app, written in mJS.
 
 ## Rules specific to this repo
@@ -20,9 +20,9 @@ settled — do not reopen those without being asked.
 - **Never edit `packages/protocol/vectors/execute.json` or `vectors/p256.json`.** They are the
   frozen proof that Solidity, TypeScript and Swift produce the same digest and the same P-256
   message. `execute.json` is asserted by `test/Digest.t.sol` and `digest.test.ts`; `p256.json` by
-  `test/FlippyGateP256.t.sol`, `p256.test.ts` and `FlippyKitTests`. If either changes, every
+  `test/TappyGateP256.t.sol`, `p256.test.ts` and `FlippyKitTests`. If either changes, every
   signature breaks and the symptom is an unhelpful "bad signature".
-- **Never copy an ABI or a shared type.** Import from `@flippy/contracts` / `@flippy/protocol`.
+- **Never copy an ABI or a shared type.** Import from `@tappy/contracts` / `@tappy/protocol`.
 - **Anything reaching the chain or the device goes through `HumanSigner`.** That interface is why
   two thirds of the team can work without hardware. Do not add a code path that bypasses it.
 - **Proposal status changes go through the state machine** (`ALLOWED_TRANSITIONS` in protocol).
@@ -35,7 +35,7 @@ settled — do not reopen those without being asked.
 ```bash
 pnpm install
 pnpm contracts:test                    # forge test, 13 tests incl. the digest vector
-pnpm --filter @flippy/protocol test    # vitest
+pnpm --filter @tappy/protocol test    # vitest
 pnpm typecheck
 pnpm dev                               # turbo, all apps
 ```

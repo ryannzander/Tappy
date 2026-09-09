@@ -70,7 +70,7 @@ private func enrollmentHint(_ lead: String) -> String {
 public enum HumanKeySigning {
     /// What actually gets signed. `SecureEnclave.P256.Signing.PrivateKey.signature(for:)` runs
     /// SHA-256 over its input and offers no way to opt out, so the message is sha256(digest),
-    /// never the digest. `FlippyGate` verifies exactly this, and `vectors/p256.json` pins it.
+    /// never the digest. `TappyGate` verifies exactly this, and `vectors/p256.json` pins it.
     public static func enclaveMessage(for digest: Data) -> Data {
         Data(SHA256.hash(data: digest))
     }

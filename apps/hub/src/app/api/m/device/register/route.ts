@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { deviceSchema, humanKeyKindSchema, hexSchema } from "@flippy/protocol";
+import { deviceSchema, humanKeyKindSchema, hexSchema } from "@tappy/protocol";
 import { z } from "zod";
-import { putDevice } from "~/server/flippy/store";
-import { deployment } from "~/server/flippy/chain";
-import { fail, json } from "~/server/flippy/json";
+import { putDevice } from "~/server/tappy/store";
+import { deployment } from "~/server/tappy/chain";
+import { fail, json } from "~/server/tappy/json";
 
 export const dynamic = "force-dynamic";
 

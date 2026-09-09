@@ -6,7 +6,7 @@ import {
   type Device,
   type Proposal,
   type ProposalStatus,
-} from "@flippy/protocol";
+} from "@tappy/protocol";
 
 /**
  * Everything the demo remembers, in a JSON file.

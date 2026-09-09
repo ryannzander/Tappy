@@ -1,7 +1,7 @@
 import { formatEther } from "viem";
-import { agentAccount, deployment, ethUsd, gateBalanceWei, gateNonce } from "~/server/flippy/chain";
-import { listDevices, listProposals } from "~/server/flippy/store";
-import { fail, json } from "~/server/flippy/json";
+import { agentAccount, deployment, ethUsd, gateBalanceWei, gateNonce } from "~/server/tappy/chain";
+import { listDevices, listProposals } from "~/server/tappy/store";
+import { fail, json } from "~/server/tappy/json";
 
 export const dynamic = "force-dynamic";
 

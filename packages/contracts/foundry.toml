@@ -15,7 +15,7 @@ remappings = [
 ]
 
 # The vendored P256Verifier is stack-too-deep without the IR pipeline, and upstream ships it with
-# via_ir and 999999 runs. Scope those settings to that one file so FlippyGate's own bytecode keeps
+# via_ir and 999999 runs. Scope those settings to that one file so TappyGate's own bytecode keeps
 # being built the way it always was.
 [[profile.default.additional_compiler_profiles]]
 name = "p256"

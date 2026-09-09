@@ -6,7 +6,7 @@
  * offers no way to opt out — so this script signs sha256(digest) too. That is the whole point
  * of the exercise: if this passes, the contract is ready for a real phone.
  *
- * Run: pnpm --filter @flippy/contracts exec tsx script/proveP256.ts
+ * Run: pnpm --filter @tappy/contracts exec tsx script/proveP256.ts
  * Env: SEPOLIA_RPC_URL, AGENT_KEY, RELAYER_KEY
  */
 import { readFileSync } from "node:fs";
@@ -15,8 +15,8 @@ import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { p256 } from "@noble/curves/nist.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { proposalDigest } from "@flippy/protocol";
-import { FlippyGateAbi } from "../src-ts/index.js";
+import { proposalDigest } from "@tappy/protocol";
+import { TappyGateAbi } from "../src-ts/index.js";
 
 function required(name: string): string {
   const v = process.env[name];
@@ -44,7 +44,7 @@ const wallet = createWalletClient({ account: relayer, chain: sepolia, transport:
 
 const nonce = (await pub.readContract({
   address: deployment.gate,
-  abi: FlippyGateAbi,
+  abi: TappyGateAbi,
   functionName: "nonce",
 })) as bigint;
 
@@ -72,7 +72,7 @@ console.log("humanSig", humanSig, `(${hexToBytes(humanSig).length} bytes)`);
 
 const hash = await wallet.writeContract({
   address: deployment.gate,
-  abi: FlippyGateAbi,
+  abi: TappyGateAbi,
   functionName: "execute",
   args: [call.to, call.value, call.data, BigInt(deadline), agentSig, humanSig],
 });

@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reshape the repo for a mobile-only product and extend `FlippyGate` so that a P-256
+**Goal:** Reshape the repo for a mobile-only product and extend `TappyGate` so that a P-256
 signature — the only kind an iPhone Secure Enclave can produce — satisfies the human half of the
 2-of-2, verified on-chain and deployed to Sepolia.
 
-**Architecture:** `FlippyGate` keeps its existing secp256k1 path for the Flipper and gains a
+**Architecture:** `TappyGate` keeps its existing secp256k1 path for the Flipper and gains a
 second one that dispatches on signature length: 65 bytes → `ECDSA.recover`, 64 bytes → a
 staticcall to a P-256 verifier (the EIP-7951 precompile at `0x100`, or a deployed Solidity
 verifier on chains that lack it). The EIP-712 digest is unchanged, so the existing frozen vector
@@ -22,8 +22,8 @@ pnpm workspaces + Turborepo, Next.js 15 (API only).
 
 - **Never edit `packages/protocol/vectors/execute.json`.** It is frozen. `vectors/p256.json`
   becomes equally frozen once Task 3 lands.
-- **Never copy an ABI or a shared type between packages.** Import from `@flippy/contracts` /
-  `@flippy/protocol`.
+- **Never copy an ABI or a shared type between packages.** Import from `@tappy/contracts` /
+  `@tappy/protocol`.
 - **Errors are loud.** A missing signer, a mismatched digest, or an illegal state transition
   throws; it never warns and continues.
 - Proposal status changes go through `ALLOWED_TRANSITIONS` in `packages/protocol/src/types.ts`.
@@ -31,7 +31,7 @@ pnpm workspaces + Turborepo, Next.js 15 (API only).
 - Node >= 22, pnpm 11.25.0.
 - The EIP-712 type string is fixed and must not change:
   `Execute(uint256 nonce,address to,uint256 value,bytes data,uint256 deadline)`
-  with domain `{ name: "FlippyGate", version: "1", chainId, verifyingContract: gate }`.
+  with domain `{ name: "TappyGate", version: "1", chainId, verifyingContract: gate }`.
 - The Secure Enclave signs `SHA-256(digest)`, never `digest`. Any code that forgets the SHA-256
   layer produces `BadHumanSig` with no other diagnostic.
 - If `forge` is not found it is at `~/.foundry/bin` or `~/.config/.foundry/bin`. Use
@@ -57,7 +57,7 @@ structural move that stops the directory name from lying.
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: the package name `@flippy/hub`, importable by nothing (it is an app), and the
+- Produces: the package name `@tappy/hub`, importable by nothing (it is an app), and the
   directory `apps/hub/src/app/api/` where every later task adds route handlers.
 
 - [ ] **Step 1: Move the directory with git so history follows**
@@ -71,13 +71,13 @@ git mv apps/web apps/hub
 In `apps/hub/package.json`, change:
 
 ```json
-"name": "@flippy/web",
+"name": "@tappy/web",
 ```
 
 to:
 
 ```json
-"name": "@flippy/hub",
+"name": "@tappy/hub",
 ```
 
 - [ ] **Step 3: Delete the UI**
@@ -186,7 +186,7 @@ Create `packages/contracts/script/checkP256.ts`:
  * A known-good vector must return 32 bytes of 1. Anything else means the
  * fallback verifier is required (see spec §4.3).
  *
- * Run: pnpm --filter @flippy/contracts exec tsx script/checkP256.ts
+ * Run: pnpm --filter @tappy/contracts exec tsx script/checkP256.ts
  */
 import { createPublicClient, http, concatHex, type Hex } from "viem";
 import { p256 } from "@noble/curves/p256";
@@ -229,7 +229,7 @@ console.log(
 - [ ] **Step 2: Add the dependencies the script needs**
 
 ```bash
-pnpm --filter @flippy/contracts add -D @noble/curves @noble/hashes tsx
+pnpm --filter @tappy/contracts add -D @noble/curves @noble/hashes tsx
 ```
 
 If `@noble/curves/p256` fails to resolve, check the installed version's export map with
@@ -241,7 +241,7 @@ provides and note it in the spike entry — later tasks import the same path.
 
 ```bash
 export SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
-pnpm --filter @flippy/contracts exec tsx script/checkP256.ts
+pnpm --filter @tappy/contracts exec tsx script/checkP256.ts
 ```
 
 Expected: `PRECOMPILE LIVE — use address(0x100)`.
@@ -257,9 +257,9 @@ Append to `docs/spikes.md`:
 ```markdown
 ## 5. Is the EIP-7951 P256VERIFY precompile live on Sepolia? — <owner>, <date>
 **Why it matters:** the human key is a Secure Enclave P-256 key. If the chain cannot verify a
-P-256 signature natively, FlippyGate must staticcall a Solidity verifier instead (~330k gas).
+P-256 signature natively, TappyGate must staticcall a Solidity verifier instead (~330k gas).
 **Answer:** _fill in: LIVE at 0x…0100, or ABSENT_
-**Evidence:** `pnpm --filter @flippy/contracts exec tsx script/checkP256.ts` against
+**Evidence:** `pnpm --filter @tappy/contracts exec tsx script/checkP256.ts` against
 <rpc url>, returned <bytes>. `@noble/curves` p256 import path used: <path>.
 **Consequence:** deploy with `P256_VERIFIER=<address>`. See spec §4.3.
 ```
@@ -345,13 +345,13 @@ describe("p256 vector", () => {
 
 - [ ] **Step 2: Run it and watch it fail**
 
-Run: `pnpm --filter @flippy/protocol test`
+Run: `pnpm --filter @tappy/protocol test`
 Expected: FAIL — `ENOENT ... vectors/p256.json`.
 
 - [ ] **Step 3: Add the dependencies**
 
 ```bash
-pnpm --filter @flippy/protocol add -D @noble/curves @noble/hashes tsx
+pnpm --filter @tappy/protocol add -D @noble/curves @noble/hashes tsx
 ```
 
 Use the same `@noble/curves` import path Task 2 recorded in the spike log.
@@ -366,7 +366,7 @@ Create `packages/protocol/scripts/genP256Vector.ts`:
  * regenerated — regenerating it invalidates every P-256 signature in the system,
  * and the symptom is an unhelpful "bad signature".
  *
- * Run: pnpm --filter @flippy/protocol exec tsx scripts/genP256Vector.ts
+ * Run: pnpm --filter @tappy/protocol exec tsx scripts/genP256Vector.ts
  */
 import { writeFileSync } from "node:fs";
 import { p256 } from "@noble/curves/p256";
@@ -412,7 +412,7 @@ console.log("wrote vectors/p256.json");
 
 - [ ] **Step 5: Generate the vector**
 
-Run: `pnpm --filter @flippy/protocol exec tsx scripts/genP256Vector.ts`
+Run: `pnpm --filter @tappy/protocol exec tsx scripts/genP256Vector.ts`
 Expected: `wrote vectors/p256.json`.
 
 If `p256.CURVE.n` is undefined, the installed noble version exposes it as `p256.CURVE.n` on the
@@ -421,7 +421,7 @@ hardcode the order as a literal — a typo there produces a vector that silently
 
 - [ ] **Step 6: Run the tests**
 
-Run: `pnpm --filter @flippy/protocol test`
+Run: `pnpm --filter @tappy/protocol test`
 Expected: PASS — the original 8 digest tests plus 6 new ones.
 
 - [ ] **Step 7: Write the vector's protection into the repo's rules**
@@ -432,7 +432,7 @@ In `CLAUDE.md`, extend the existing rule so it covers both files:
 - **Never edit `packages/protocol/vectors/execute.json` or `vectors/p256.json`.** They are the
   frozen proof that Solidity, TypeScript and Swift produce the same digest and the same P-256
   message. `execute.json` is asserted by `test/Digest.t.sol` and `digest.test.ts`; `p256.json` by
-  `test/FlippyGateP256.t.sol`, `p256.test.ts` and `FlippyKitTests`. If either changes, every
+  `test/TappyGateP256.t.sol`, `p256.test.ts` and `FlippyKitTests`. If either changes, every
   signature breaks and the symptom is an unhelpful "bad signature".
 ```
 
@@ -538,7 +538,7 @@ describe("mobile schemas", () => {
 
 - [ ] **Step 2: Run it and watch it fail**
 
-Run: `pnpm --filter @flippy/protocol test`
+Run: `pnpm --filter @tappy/protocol test`
 Expected: FAIL — `mobileProposalSchema` is not exported.
 
 - [ ] **Step 3: Remove `buy` from the action union**
@@ -650,18 +650,18 @@ the `vm.serializeAddress(obj, "merchant", address(merchant));` line.
 next `pnpm contracts:build` would regenerate an import of a file you just deleted. Change:
 
 ```js
-const CONTRACTS = ["FlippyGate", "MockToken", "MockSwap", "MockMerchant"];
+const CONTRACTS = ["TappyGate", "MockToken", "MockSwap", "MockMerchant"];
 ```
 
 to:
 
 ```js
-const CONTRACTS = ["FlippyGate", "MockToken", "MockSwap"];
+const CONTRACTS = ["TappyGate", "MockToken", "MockSwap"];
 ```
 
-The generator also emits `export const abis = { FlippyGate, MockToken, MockSwap }` while importing
-those ABIs as `FlippyGateAbi`, `MockTokenAbi`, `MockSwapAbi` — the object references identifiers
-that do not exist. It has gone unnoticed because `@flippy/contracts` has no real `typecheck`
+The generator also emits `export const abis = { TappyGate, MockToken, MockSwap }` while importing
+those ABIs as `TappyGateAbi`, `MockTokenAbi`, `MockSwapAbi` — the object references identifiers
+that do not exist. It has gone unnoticed because `@tappy/contracts` has no real `typecheck`
 script (it echoes a message), and no app imports it yet. Task 6 is the first thing that does, so
 fix it now. Change the `abis` line in the generated-template array from:
 
@@ -689,7 +689,7 @@ Expected: `exported 3 ABIs …` and no TypeScript errors.
 
 - [ ] **Step 9: Run everything**
 
-Run: `pnpm --filter @flippy/protocol test && pnpm contracts:test && pnpm typecheck`
+Run: `pnpm --filter @tappy/protocol test && pnpm contracts:test && pnpm typecheck`
 Expected: PASS on all three. If `apps/bridge` fails to typecheck on the removed `buy` branch, fix
 the switch there — a bridge that cannot render an action must throw, not fall through.
 
@@ -705,23 +705,23 @@ shape the phone can verify for itself, plus devices and NFC stations."
 
 ---
 
-### Task 5: FlippyGate accepts a P-256 human signature
+### Task 5: TappyGate accepts a P-256 human signature
 
 The core of this plan. `execute` dispatches on `humanSig.length`: 65 bytes is the Flipper,
 64 bytes is the iPhone. Tests run against a deployed Solidity verifier so they pass on any
 Foundry version, with a separate fork test for the real precompile.
 
 **Files:**
-- Modify: `packages/contracts/src/FlippyGate.sol`
-- Create: `packages/contracts/test/FlippyGateP256.t.sol`
-- Modify: `packages/contracts/test/FlippyGate.t.sol` (constructor calls)
+- Modify: `packages/contracts/src/TappyGate.sol`
+- Create: `packages/contracts/test/TappyGateP256.t.sol`
+- Modify: `packages/contracts/test/TappyGate.t.sol` (constructor calls)
 - Modify: `packages/contracts/test/Digest.t.sol` (constructor calls)
 - Modify: `packages/contracts/foundry.toml` (remapping)
 
 **Interfaces:**
 - Consumes: `packages/protocol/vectors/p256.json` fields from Task 3.
 - Produces: the constructor
-  `FlippyGate(address agent, address humanK1, bytes32 humanQx, bytes32 humanQy, address p256Verifier)`
+  `TappyGate(address agent, address humanK1, bytes32 humanQx, bytes32 humanQy, address p256Verifier)`
   and public getters `humanK1()`, `humanQx()`, `humanQy()`, `p256Verifier()`. Task 6's deploy
   script and the hub's relayer bind to this exact signature. The errors `NoK1Human()`,
   `NoP256Human()`, `BadHumanSigLength()`, `NoHumanAuthority()` are new; `BadHumanSig()`,
@@ -751,23 +751,23 @@ fallback implements the EIP-7951 input/output contract.
 
 - [ ] **Step 2: Write the failing test**
 
-Create `packages/contracts/test/FlippyGateP256.t.sol`:
+Create `packages/contracts/test/TappyGateP256.t.sol`:
 
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {FlippyGate} from "../src/FlippyGate.sol";
+import {TappyGate} from "../src/TappyGate.sol";
 import {P256Verifier} from "p256-verifier/P256Verifier.sol";
 
 /// @notice The iPhone half of the 2-of-2. The Secure Enclave can only sign P-256, and it
 ///         hashes with SHA-256 before signing, so the gate verifies sha256(digest).
 ///         Pinned by the frozen vector so Solidity, TypeScript and Swift cannot drift.
-contract FlippyGateP256Test is Test {
+contract TappyGateP256Test is Test {
     string constant VECTOR = "../protocol/vectors/p256.json";
 
-    FlippyGate gate;
+    TappyGate gate;
     address verifier;
     address agent;
     uint256 agentKey;
@@ -787,7 +787,7 @@ contract FlippyGateP256Test is Test {
         sig64HighS = vm.parseJsonBytes(json, ".signature64HighS");
 
         (agent, agentKey) = makeAddrAndKey("agent");
-        gate = new FlippyGate(agent, address(0), qx, qy, verifier);
+        gate = new TappyGate(agent, address(0), qx, qy, verifier);
         vm.deal(address(gate), 1 ether);
     }
 
@@ -805,19 +805,19 @@ contract FlippyGateP256Test is Test {
         return abi.encodePacked(r, s, v);
     }
 
-    function _pinnedGate() internal returns (FlippyGate) {
+    function _pinnedGate() internal returns (TappyGate) {
         // The vector's digest is bound to chainId 11155111 and gate 0x1111…1111.
         vm.chainId(11155111);
-        FlippyGate fresh = new FlippyGate(agent, address(0), qx, qy, verifier);
+        TappyGate fresh = new TappyGate(agent, address(0), qx, qy, verifier);
         address pinnedAddr = 0x1111111111111111111111111111111111111111;
         vm.etch(pinnedAddr, address(fresh).code);
         // immutables live in code, so the etched copy keeps agent/qx/qy/verifier
         vm.deal(pinnedAddr, 1 ether);
-        return FlippyGate(payable(pinnedAddr));
+        return TappyGate(payable(pinnedAddr));
     }
 
     function test_p256_signature_from_the_vector_executes() public {
-        FlippyGate g = _pinnedGate();
+        TappyGate g = _pinnedGate();
         (address to, uint256 value, bytes memory data, uint256 deadline) = _vectorCall();
         bytes32 digest = g.digestOf(0, to, value, data, deadline);
 
@@ -829,7 +829,7 @@ contract FlippyGateP256Test is Test {
     }
 
     function test_high_s_p256_signature_is_accepted() public {
-        FlippyGate g = _pinnedGate();
+        TappyGate g = _pinnedGate();
         (address to, uint256 value, bytes memory data, uint256 deadline) = _vectorCall();
         bytes32 digest = g.digestOf(0, to, value, data, deadline);
 
@@ -840,7 +840,7 @@ contract FlippyGateP256Test is Test {
     }
 
     function test_replaying_a_p256_signature_reverts() public {
-        FlippyGate g = _pinnedGate();
+        TappyGate g = _pinnedGate();
         (address to, uint256 value, bytes memory data, uint256 deadline) = _vectorCall();
         bytes32 digest = g.digestOf(0, to, value, data, deadline);
         bytes memory aSig = _agentSig(digest);
@@ -848,22 +848,22 @@ contract FlippyGateP256Test is Test {
         vm.warp(deadline - 1);
         g.execute(to, value, data, deadline, aSig, sig64);
 
-        vm.expectRevert(FlippyGate.BadAgentSig.selector); // nonce moved, so the digest changed
+        vm.expectRevert(TappyGate.BadAgentSig.selector); // nonce moved, so the digest changed
         g.execute(to, value, data, deadline, aSig, sig64);
     }
 
     function test_wrong_public_key_reverts() public {
         vm.chainId(11155111);
-        FlippyGate fresh = new FlippyGate(agent, address(0), bytes32(uint256(qx) ^ 1), qy, verifier);
+        TappyGate fresh = new TappyGate(agent, address(0), bytes32(uint256(qx) ^ 1), qy, verifier);
         vm.etch(0x1111111111111111111111111111111111111111, address(fresh).code);
-        FlippyGate g = FlippyGate(payable(0x1111111111111111111111111111111111111111));
+        TappyGate g = TappyGate(payable(0x1111111111111111111111111111111111111111));
         vm.deal(address(g), 1 ether);
 
         (address to, uint256 value, bytes memory data, uint256 deadline) = _vectorCall();
         bytes32 digest = g.digestOf(0, to, value, data, deadline);
 
         vm.warp(deadline - 1);
-        vm.expectRevert(FlippyGate.BadHumanSig.selector);
+        vm.expectRevert(TappyGate.BadHumanSig.selector);
         g.execute(to, value, data, deadline, _agentSig(digest), sig64);
     }
 
@@ -872,7 +872,7 @@ contract FlippyGateP256Test is Test {
         bytes32 digest = gate.digestOf(0, to, value, data, deadline);
 
         vm.warp(deadline - 1);
-        vm.expectRevert(FlippyGate.BadHumanSigLength.selector);
+        vm.expectRevert(TappyGate.BadHumanSigLength.selector);
         gate.execute(to, value, data, deadline, _agentSig(digest), hex"1234");
     }
 
@@ -881,13 +881,13 @@ contract FlippyGateP256Test is Test {
         bytes32 digest = gate.digestOf(0, to, value, data, deadline);
 
         vm.warp(deadline - 1);
-        vm.expectRevert(FlippyGate.NoK1Human.selector);
+        vm.expectRevert(TappyGate.NoK1Human.selector);
         gate.execute(to, value, data, deadline, _agentSig(digest), _agentSig(digest));
     }
 
     function test_constructor_with_no_human_authority_reverts() public {
-        vm.expectRevert(FlippyGate.NoHumanAuthority.selector);
-        new FlippyGate(agent, address(0), bytes32(0), bytes32(0), verifier);
+        vm.expectRevert(TappyGate.NoHumanAuthority.selector);
+        new TappyGate(agent, address(0), bytes32(0), bytes32(0), verifier);
     }
 }
 ```
@@ -895,11 +895,11 @@ contract FlippyGateP256Test is Test {
 - [ ] **Step 3: Run it and watch it fail**
 
 Run: `pnpm contracts:test`
-Expected: FAIL to compile — `FlippyGate` has a two-argument constructor.
+Expected: FAIL to compile — `TappyGate` has a two-argument constructor.
 
 - [ ] **Step 4: Rewrite the human half of the gate**
 
-In `packages/contracts/src/FlippyGate.sol`, replace `address public immutable human;` with:
+In `packages/contracts/src/TappyGate.sol`, replace `address public immutable human;` with:
 
 ```solidity
     /// @notice secp256k1 human — the Flipper. May be address(0) if only the phone is configured.
@@ -919,7 +919,7 @@ Replace the constructor:
 
 ```solidity
     constructor(address _agent, address _humanK1, bytes32 _humanQx, bytes32 _humanQy, address _p256Verifier)
-        EIP712("FlippyGate", "1")
+        EIP712("TappyGate", "1")
     {
         if (_agent == address(0)) revert ZeroAddress();
         if (_humanK1 == address(0) && _humanQx == bytes32(0)) revert NoHumanAuthority();
@@ -977,9 +977,9 @@ and add the function:
 
 - [ ] **Step 5: Update the two existing test files to the new constructor**
 
-Every `new FlippyGate(agent, human)` becomes
-`new FlippyGate(agent, human, bytes32(0), bytes32(0), address(0))`. There are calls in
-`test/FlippyGate.t.sol` and one in `test/Digest.t.sol`. Change nothing else in either file — if a
+Every `new TappyGate(agent, human)` becomes
+`new TappyGate(agent, human, bytes32(0), bytes32(0), address(0))`. There are calls in
+`test/TappyGate.t.sol` and one in `test/Digest.t.sol`. Change nothing else in either file — if a
 test that passed before now fails, the secp256k1 path has regressed and that is the bug.
 
 - [ ] **Step 6: Run the whole suite**
@@ -1003,7 +1003,7 @@ reverts, the digest differs and the problem is in `_pinnedGate`, not the crypto.
 
 - [ ] **Step 7: Add the fork test for the real precompile**
 
-Append to `test/FlippyGateP256.t.sol`:
+Append to `test/TappyGateP256.t.sol`:
 
 ```solidity
     /// @notice Proves the frozen vector also satisfies the real EIP-7951 precompile, not just the
@@ -1034,7 +1034,7 @@ update `docs/spikes.md` and deploy with the fallback verifier in Task 6.
 - [ ] **Step 8: Re-export the ABI**
 
 Run: `pnpm contracts:build`
-Expected: `packages/contracts/abi/FlippyGate.json` now shows the five-argument constructor.
+Expected: `packages/contracts/abi/TappyGate.json` now shows the five-argument constructor.
 
 - [ ] **Step 9: Commit**
 
@@ -1066,7 +1066,7 @@ Turns the passing tests into an address the iOS app can talk to. This is milesto
 
 - [ ] **Step 1: Update the deploy script's inputs**
 
-In `packages/contracts/script/Deploy.s.sol`, replace the `human` env read and the `FlippyGate`
+In `packages/contracts/script/Deploy.s.sol`, replace the `human` env read and the `TappyGate`
 construction with:
 
 ```solidity
@@ -1079,7 +1079,7 @@ construction with:
 ```
 
 ```solidity
-        FlippyGate gate = new FlippyGate(agent, humanK1, humanQx, humanQy, p256Verifier);
+        TappyGate gate = new TappyGate(agent, humanK1, humanQx, humanQy, p256Verifier);
 ```
 
 and extend the JSON block:
@@ -1138,14 +1138,14 @@ key, and submits `execute`:
  * M2 proof: a P-256 signature, produced off-chain the way a Secure Enclave produces
  * one, executes a real transfer through the deployed gate.
  *
- * Run: pnpm --filter @flippy/contracts exec tsx script/proveP256.ts
+ * Run: pnpm --filter @tappy/contracts exec tsx script/proveP256.ts
  */
 import { readFileSync } from "node:fs";
 import { createWalletClient, createPublicClient, http, concatHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
-import { proposalDigest } from "@flippy/protocol";
-import { FlippyGateAbi } from "@flippy/contracts";
+import { proposalDigest } from "@tappy/protocol";
+import { TappyGateAbi } from "@tappy/contracts";
 
 const d = JSON.parse(readFileSync("./deployments/sepolia.json", "utf8"));
 const v = JSON.parse(readFileSync("../protocol/vectors/p256.json", "utf8"));
@@ -1155,7 +1155,7 @@ const relayer = privateKeyToAccount(process.env.RELAYER_KEY as `0x${string}`);
 const pub = createPublicClient({ chain: sepolia, transport: http(process.env.SEPOLIA_RPC_URL) });
 const wallet = createWalletClient({ account: relayer, chain: sepolia, transport: http(process.env.SEPOLIA_RPC_URL) });
 
-const nonce = await pub.readContract({ address: d.gate, abi: FlippyGateAbi, functionName: "nonce" });
+const nonce = await pub.readContract({ address: d.gate, abi: TappyGateAbi, functionName: "nonce" });
 const call = { to: agent.address, value: 1n, data: "0x" as const };
 const deadline = Math.floor(Date.now() / 1000) + 600;
 
@@ -1172,7 +1172,7 @@ if (digest !== v.digest) {
 
 const hash = await wallet.writeContract({
   address: d.gate,
-  abi: FlippyGateAbi,
+  abi: TappyGateAbi,
   functionName: "execute",
   args: [call.to, call.value, call.data, BigInt(deadline), agentSig, concatHex([v.r, v.s.slice(2) as `0x${string}`])],
 });
@@ -1197,14 +1197,14 @@ const humanSig = `0x${sig.r.toString(16).padStart(64, "0")}${sig.s.toString(16).
 
 and delete the digest-equality guard.
 
-Run: `pnpm --filter @flippy/contracts exec tsx script/proveP256.ts`
+Run: `pnpm --filter @tappy/contracts exec tsx script/proveP256.ts`
 Expected: a transaction hash and a receipt with `status: "success"`.
 
 - [ ] **Step 5: Commit the deployment**
 
 ```bash
 git add packages/contracts/deployments/sepolia.json packages/contracts/script .env.example
-git commit -m "chore: deploy FlippyGate to Sepolia with a P-256 human authority
+git commit -m "chore: deploy TappyGate to Sepolia with a P-256 human authority
 
 M2. A P-256 signature shaped exactly like a Secure Enclave's executes a real
 transfer through the gate. The phone comes next; the chain is ready for it."

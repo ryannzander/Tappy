@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {FlippyGate} from "../src/FlippyGate.sol";
+import {TappyGate} from "../src/TappyGate.sol";
 import {P256Verifier} from "p256-verifier/P256Verifier.sol";
 
 /// @notice The iPhone half of the 2-of-2. The Secure Enclave can only sign P-256, and it
@@ -11,11 +11,11 @@ import {P256Verifier} from "p256-verifier/P256Verifier.sol";
 /// @dev Runs against the vendored Solidity verifier rather than the 0x100 precompile, so the
 ///      suite passes on any Foundry build. `test_fork_precompile_accepts_the_vector` covers
 ///      the precompile itself.
-contract FlippyGateP256Test is Test {
+contract TappyGateP256Test is Test {
     string constant VECTOR = "../protocol/vectors/p256.json";
     address constant PINNED_GATE = 0x1111111111111111111111111111111111111111;
 
-    FlippyGate gate;
+    TappyGate gate;
     address verifier;
     address agent;
     uint256 agentKey;
@@ -35,7 +35,7 @@ contract FlippyGateP256Test is Test {
         sig64HighS = vm.parseJsonBytes(json, ".signature64HighS");
 
         (agent, agentKey) = makeAddrAndKey("agent");
-        gate = new FlippyGate(agent, address(0), qx, qy, verifier);
+        gate = new TappyGate(agent, address(0), qx, qy, verifier);
         vm.deal(address(gate), 1 ether);
     }
 
@@ -57,16 +57,16 @@ contract FlippyGateP256Test is Test {
     ///      under test has to answer to both. OpenZeppelin's EIP712 rebuilds the domain
     ///      separator whenever address(this) differs from the one cached at construction, which
     ///      is what makes the etched copy produce the pinned digest. Digest.t.sol does the same.
-    function _pinnedGate(bytes32 useQx) internal returns (FlippyGate) {
+    function _pinnedGate(bytes32 useQx) internal returns (TappyGate) {
         vm.chainId(11155111);
-        FlippyGate fresh = new FlippyGate(agent, address(0), useQx, qy, verifier);
+        TappyGate fresh = new TappyGate(agent, address(0), useQx, qy, verifier);
         // immutables live in code, so the etched copy keeps agent/qx/qy/verifier
         vm.etch(PINNED_GATE, address(fresh).code);
         vm.deal(PINNED_GATE, 1 ether);
-        return FlippyGate(payable(PINNED_GATE));
+        return TappyGate(payable(PINNED_GATE));
     }
 
-    function _pinnedGate() internal returns (FlippyGate) {
+    function _pinnedGate() internal returns (TappyGate) {
         return _pinnedGate(qx);
     }
 
@@ -84,7 +84,7 @@ contract FlippyGateP256Test is Test {
     }
 
     function test_p256_signature_from_the_vector_executes() public {
-        FlippyGate g = _pinnedGate();
+        TappyGate g = _pinnedGate();
         (address to, uint256 value, bytes memory data, uint256 deadline) = _vectorCall();
         bytes32 digest = g.digestOf(0, to, value, data, deadline);
 
@@ -96,7 +96,7 @@ contract FlippyGateP256Test is Test {
     }
 
     function test_high_s_p256_signature_is_accepted() public {
-        FlippyGate g = _pinnedGate();
+        TappyGate g = _pinnedGate();
         (address to, uint256 value, bytes memory data, uint256 deadline) = _vectorCall();
         bytes32 digest = g.digestOf(0, to, value, data, deadline);
 
@@ -107,7 +107,7 @@ contract FlippyGateP256Test is Test {
     }
 
     function test_replaying_a_p256_signature_reverts() public {
-        FlippyGate g = _pinnedGate();
+        TappyGate g = _pinnedGate();
         (address to, uint256 value, bytes memory data, uint256 deadline) = _vectorCall();
         bytes32 digest = g.digestOf(0, to, value, data, deadline);
         bytes memory aSig = _agentSig(digest);
@@ -115,17 +115,17 @@ contract FlippyGateP256Test is Test {
         vm.warp(deadline - 1);
         g.execute(to, value, data, deadline, aSig, sig64);
 
-        vm.expectRevert(FlippyGate.BadAgentSig.selector); // nonce moved, so the digest changed
+        vm.expectRevert(TappyGate.BadAgentSig.selector); // nonce moved, so the digest changed
         g.execute(to, value, data, deadline, aSig, sig64);
     }
 
     function test_wrong_public_key_reverts() public {
-        FlippyGate g = _pinnedGate(bytes32(uint256(qx) ^ 1));
+        TappyGate g = _pinnedGate(bytes32(uint256(qx) ^ 1));
         (address to, uint256 value, bytes memory data, uint256 deadline) = _vectorCall();
         bytes32 digest = g.digestOf(0, to, value, data, deadline);
 
         vm.warp(deadline - 1);
-        vm.expectRevert(FlippyGate.BadHumanSig.selector);
+        vm.expectRevert(TappyGate.BadHumanSig.selector);
         g.execute(to, value, data, deadline, _agentSig(digest), sig64);
     }
 
@@ -134,7 +134,7 @@ contract FlippyGateP256Test is Test {
         bytes32 digest = gate.digestOf(0, to, value, data, deadline);
 
         vm.warp(deadline - 1);
-        vm.expectRevert(FlippyGate.BadHumanSigLength.selector);
+        vm.expectRevert(TappyGate.BadHumanSigLength.selector);
         gate.execute(to, value, data, deadline, _agentSig(digest), hex"1234");
     }
 
@@ -143,27 +143,27 @@ contract FlippyGateP256Test is Test {
         bytes32 digest = gate.digestOf(0, to, value, data, deadline);
 
         vm.warp(deadline - 1);
-        vm.expectRevert(FlippyGate.NoK1Human.selector);
+        vm.expectRevert(TappyGate.NoK1Human.selector);
         gate.execute(to, value, data, deadline, _agentSig(digest), _agentSig(digest));
     }
 
     /// @dev The mirror of the test above: a Flipper-only gate must reject a phone signature
     ///      by name, not by falling through to a staticcall against an unset verifier.
     function test_p256_signature_rejected_when_no_p256_human_configured() public {
-        FlippyGate k1Only = new FlippyGate(agent, makeAddr("human"), bytes32(0), bytes32(0), address(0));
+        TappyGate k1Only = new TappyGate(agent, makeAddr("human"), bytes32(0), bytes32(0), address(0));
         vm.deal(address(k1Only), 1 ether);
 
         (address to, uint256 value, bytes memory data, uint256 deadline) = _vectorCall();
         bytes32 digest = k1Only.digestOf(0, to, value, data, deadline);
 
         vm.warp(deadline - 1);
-        vm.expectRevert(FlippyGate.NoP256Human.selector);
+        vm.expectRevert(TappyGate.NoP256Human.selector);
         k1Only.execute(to, value, data, deadline, _agentSig(digest), sig64);
     }
 
     function test_constructor_with_no_human_authority_reverts() public {
-        vm.expectRevert(FlippyGate.NoHumanAuthority.selector);
-        new FlippyGate(agent, address(0), bytes32(0), bytes32(0), verifier);
+        vm.expectRevert(TappyGate.NoHumanAuthority.selector);
+        new TappyGate(agent, address(0), bytes32(0), bytes32(0), verifier);
     }
 
     /// @notice Proves the frozen vector also satisfies the real EIP-7951 precompile, not just the

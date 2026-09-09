@@ -1,5 +1,5 @@
 {
-  "name": "@flippy/contracts",
+  "name": "@tappy/contracts",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -25,6 +25,6 @@
     "viem": "^2.56.3"
   },
   "dependencies": {
-    "@flippy/protocol": "workspace:*"
+    "@tappy/protocol": "workspace:*"
   }
 }

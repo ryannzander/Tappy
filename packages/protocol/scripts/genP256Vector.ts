@@ -3,7 +3,7 @@
  * regenerated — regenerating it invalidates every P-256 signature in the system,
  * and the symptom is an unhelpful "bad signature".
  *
- * Run: pnpm --filter @flippy/protocol exec tsx scripts/genP256Vector.ts
+ * Run: pnpm --filter @tappy/protocol exec tsx scripts/genP256Vector.ts
  */
 import { writeFileSync } from "node:fs";
 import { p256 } from "@noble/curves/nist.js";

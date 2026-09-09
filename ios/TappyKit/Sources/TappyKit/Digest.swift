@@ -6,7 +6,7 @@ import Foundation
 /// That is what makes "what you see is what you sign" true here: if the hub lies about what
 /// a proposal does, the digest will not match and the signature is worthless.
 ///
-/// Must byte-for-byte match `packages/protocol/src/digest.ts` and `FlippyGate.digestOf`.
+/// Must byte-for-byte match `packages/protocol/src/digest.ts` and `TappyGate.digestOf`.
 /// Pinned by the frozen vector in `packages/protocol/vectors/execute.json`.
 public enum EIP712 {
     static let domainTypeString =
@@ -17,7 +17,7 @@ public enum EIP712 {
     public static func domainSeparator(chainId: Int, gate: String) throws -> Data {
         var encoded = Data()
         encoded += Keccak.hash256(Data(domainTypeString.utf8))
-        encoded += Keccak.hash256(Data("FlippyGate".utf8))
+        encoded += Keccak.hash256(Data("TappyGate".utf8))
         encoded += Keccak.hash256(Data("1".utf8))
         encoded += ABI.uint256(chainId)
         encoded += try ABI.address(gate)

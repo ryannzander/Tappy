@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { formatEther, isAddress, type Address } from "viem";
-import { deployment, agentAccount, ethUsd, gateBalanceWei } from "../flippy/chain.js";
-import { createProposal, sendAction, swapAction } from "../flippy/proposals.js";
+import { deployment, agentAccount, ethUsd, gateBalanceWei } from "../tappy/chain.js";
+import { createProposal, sendAction, swapAction } from "../tappy/proposals.js";
 import {
   addMessage,
   getProposal,
@@ -9,7 +9,7 @@ import {
   listDevices,
   listMessages,
   listProposals,
-} from "../flippy/store.js";
+} from "../tappy/store.js";
 
 /** Overridable, because model ids move faster than hackathons do. */
 const MODEL = process.env.OPENAI_MODEL ?? "gpt-5";

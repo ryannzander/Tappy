@@ -1,7 +1,7 @@
 import { encodeFunctionData, parseEther, type Address, type Hex } from "viem";
 import { sepolia } from "viem/chains";
-import type { Action, Call, Proposal } from "@flippy/protocol";
-import { MockSwapAbi } from "@flippy/contracts";
+import type { Action, Call, Proposal } from "@tappy/protocol";
+import { MockSwapAbi } from "@tappy/contracts";
 import { deployment, digestFor, gateNonce, signAsAgent } from "./chain.js";
 import { putProposal } from "./store.js";
 

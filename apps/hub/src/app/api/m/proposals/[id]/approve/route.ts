@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { hexSchema, toMobileProposal } from "@flippy/protocol";
-import { getProposal, transition } from "~/server/flippy/store";
-import { explorerTx, publicClient, relayExecute, verifyHumanSignature } from "~/server/flippy/chain";
-import { fail, json } from "~/server/flippy/json";
+import { hexSchema, toMobileProposal } from "@tappy/protocol";
+import { getProposal, transition } from "~/server/tappy/store";
+import { explorerTx, publicClient, relayExecute, verifyHumanSignature } from "~/server/tappy/chain";
+import { fail, json } from "~/server/tappy/json";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;

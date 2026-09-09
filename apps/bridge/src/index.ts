@@ -1,6 +1,6 @@
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex } from "viem";
-import { MockHumanSigner, chainByKey, proposalViewSchema, type HumanSigner } from "@flippy/protocol";
+import { MockHumanSigner, chainByKey, proposalViewSchema, type HumanSigner } from "@tappy/protocol";
 import { loadConfig } from "./config.js";
 import { FlipperCli } from "./flipperCli.js";
 import { FlipperHumanSigner } from "./flipperSigner.js";

@@ -1,5 +1,5 @@
 {
-  "name": "@flippy/hub",
+  "name": "@tappy/hub",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,8 +16,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@flippy/contracts": "workspace:*",
-    "@flippy/protocol": "workspace:*",
+    "@tappy/contracts": "workspace:*",
+    "@tappy/protocol": "workspace:*",
     "@noble/curves": "^2.4.0",
     "@noble/hashes": "^2.4.0",
     "@t3-oss/env-nextjs": "^0.12.0",

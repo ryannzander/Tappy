@@ -37,7 +37,7 @@ await import("./src/env.js");
 /** @type {import("next").NextConfig} */
 const config = {
   // The workspace packages ship TypeScript, not a build. Next has to compile them itself.
-  transpilePackages: ["@flippy/protocol", "@flippy/contracts"],
+  transpilePackages: ["@tappy/protocol", "@tappy/contracts"],
 
   webpack: (cfg) => {
     // Those packages use NodeNext-style specifiers — `export * from "./types.js"` pointing at a

@@ -1,6 +1,6 @@
-import { toMobileProposal } from "@flippy/protocol";
-import { getProposal, transition } from "~/server/flippy/store";
-import { fail, json } from "~/server/flippy/json";
+import { toMobileProposal } from "@tappy/protocol";
+import { getProposal, transition } from "~/server/tappy/store";
+import { fail, json } from "~/server/tappy/json";
 
 export const dynamic = "force-dynamic";
 

@@ -14,8 +14,8 @@ import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { p256 } from "@noble/curves/nist.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { proposalDigest, type Call } from "@flippy/protocol";
-import { FlippyGateAbi } from "@flippy/contracts";
+import { proposalDigest, type Call } from "@tappy/protocol";
+import { TappyGateAbi } from "@tappy/contracts";
 
 function required(name: string): string {
   const v = process.env[name];
@@ -80,7 +80,7 @@ const relayerClient = () =>
 export async function gateNonce(): Promise<bigint> {
   return (await publicClient().readContract({
     address: deployment().gate,
-    abi: FlippyGateAbi,
+    abi: TappyGateAbi,
     functionName: "nonce",
   })) as bigint;
 }
@@ -99,7 +99,7 @@ export async function signAsAgent(digest: Hex): Promise<Hex> {
  * anyway, but it would cost a transaction and report only "BadHumanSig", which says nothing
  * about why. Failing here gives us the reason in a log line.
  *
- * Signature length is the discriminator, exactly as it is in FlippyGate: 65 bytes is the
+ * Signature length is the discriminator, exactly as it is in TappyGate: 65 bytes is the
  * Flipper's secp256k1, 64 is the iPhone's Secure Enclave P-256. One gate, two devices.
  */
 export async function verifyHumanSignature(digest: Hex, signature: Hex): Promise<"secp256k1" | "p256" | false> {
@@ -142,7 +142,7 @@ export async function relayExecute(
 ): Promise<Hex> {
   return relayerClient().writeContract({
     address: deployment().gate,
-    abi: FlippyGateAbi,
+    abi: TappyGateAbi,
     functionName: "execute",
     args: [call.to, call.value, call.data, BigInt(deadline), agentSig, humanSig],
   });

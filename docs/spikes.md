@@ -44,22 +44,83 @@ protobuf protocol instead of the text CLI; (c) C app owning USB CDC.
 
 ---
 
-## 2. Does one hard-coded Claude turn reliably produce a `propose_send` tool call? — <owner B>, TODO hour 1
+## 2. Does one hard-coded model turn reliably produce a `propose_send` tool call? — <owner B>, TODO hour 1
 **Why it matters:** the agent loop is ours now, so its failure modes are ours. A model that
 argues instead of calling the tool is a broken demo with nobody to blame.
-**How to test:** one script, one message, one tool definition, print the parsed input. Read the
-`claude-api` skill first — model ids and thinking parameters have changed.
-**Also record:** turn latency, behaviour on a vague request, behaviour on the injected message.
-**Answer:** _not yet run_
+**How to test:** the harness is written — `apps/web/src/server/agent/spike.ts`. Needs an
+`OPENAI_API_KEY` in `apps/web/.env` (not in `.env.example` yet — add it), then:
+
+```bash
+pnpm --filter @tappy/web spike:agent                        # 4 scenarios x 3 runs, effort=low
+pnpm --filter @tappy/web spike:agent -- --effort high       # same, for the latency comparison
+pnpm --filter @tappy/web spike:agent -- --only injection --repeat 5
+```
+
+Scenarios are `clear`, `vague`, `units` and `injection`. Arguments are `JSON.parse`d and then
+validated with zod, never string-matched.
+**Known before running:** GPT-5.6 rejects function tools on `/v1/chat/completions` while reasoning
+is on, so the spike uses `/v1/responses`. `reasoning.effort` defaults to `medium`; the spike
+defaults to `low`.
+**Also record:** turn latency at low vs medium effort, behaviour on a vague request, and whether
+`injection` gets the model to propose the drain — if it declines, the attack scene (SPEC §9, 1:50)
+needs the scripted replay button, and that is a build item, not a retake.
+**Answer:** _not yet run — script committed, waiting on an API key_
 
 ---
 
-## 3. Where does the approval channel live, given Vercel can't hold a WebSocket? — <owner B>, TODO hour 2
+## 3. Where does the approval channel live, given Vercel can't hold a WebSocket? — B, 2026-09-04
 **Options:** (a) bridge polls a `pending_approval` row and POSTs the result to tRPC; (b) run the
 channel as a local Node process during the demo; (c) Supabase Realtime.
-**Recommended:** (a). Boring, works on Vercel, ~1 s latency is invisible next to a human pressing
-a button. The `HumanSigner` interface is unchanged either way.
-**Answer:** _not yet decided_
+**Answer:** (a). There is no WebSocket. The `web_proposal` row *is* the channel.
+
+**Evidence:** `apps/web/src/server/api/routers/approvals.ts` and the two tables in
+`src/server/db/schema.ts`. Four procedures, and the bridge only needs three of them:
+
+| The bridge calls | Carries | Replaces the socket message |
+|---|---|---|
+| `approvals.hello` | `{ address, kind }` | `signer.hello` |
+| `approvals.next` | `{ address }`, poll every 500 ms | `approval.request` |
+| `approvals.submit` | `{ decision }` | `approval.result` |
+
+`@tappy/protocol` did not change. The payloads are the same ones SPEC §3.4 defined for the
+socket, so this was not a `protocol:` PR and workstream C is not blocked.
+
+**Consequence 1 — nobody waits.** This is the part that is not obvious from the options list.
+`propose_*` writes a `PENDING_HUMAN` row and returns immediately, and `approvals.submit` moves it
+to `SUBMITTED`. No request is open while the human thinks, which is the only reason this works on
+serverless at all. `HumanSigner.requestApproval` returning a `Promise<Decision>` still fits
+`MockHumanSigner`, which runs in-process, but the external path never calls it. The relayer picks
+the decision up from the row on its next tick.
+
+**Consequence 2 — expiry needs a tick.** Only one proposal may be `PENDING_HUMAN` at a time or the
+nonces collide, and a partial unique index enforces it. So a proposal nobody answers blocks every
+later one. `approvals.expireStale` exists for the relayer to call; if the relayer is not running,
+nothing expires on its own.
+
+**Consequence 3 — polling is the heartbeat.** `approvals.next` bumps `lastSeenAt`, and a signer
+counts as connected for 2 s after its last poll. A bridge that dies goes stale by itself. There is
+no disconnect message to miss.
+
+**Consequence 4 — the channel needs its own auth.** A socket the bridge dials into is at least a
+connection we accept once. Four HTTP endpoints on a public Vercel URL are reachable by anyone who
+finds them. So the bridge sends `x-tappy-bridge-token`, and the channel refuses everything while
+`BRIDGE_TOKEN` is unset. `approvals.submit` also recovers `humanSig` against `HUMAN_ADDRESS`,
+because a token in a laptop `.env` is a weaker secret than a signature. Without that check a leaked
+token moves a proposal out of `PENDING_HUMAN` and the real press has nowhere to land. This is not
+in tension with DECISIONS #10: that rule is about the agent's tools, not the device's API.
+
+**Cost:** up to 500 ms before the Flipper buzzes, plus one relayer tick after the press. Against a
+human reaching for a button and 12 to 30 s of Sepolia inclusion, nobody will see it.
+
+**Verified against real Postgres** (Supabase, 2026-09-04). `pnpm --filter @tappy/web verify:channel`
+drives announce, poll, sign, submit and then tries what the channel should refuse. 11 checks pass.
+Running it found two bugs typecheck could not: `jsonb` columns go through `JSON.stringify`, which
+throws on the `bigint` inside `Action`, so the column stores the zod *input* shape with amounts as
+strings; and a raw ``sql`col > ${date}` `` template hands postgres-js a bare `Date` with no type to
+bind, so both comparisons use `gt()` now.
+
+**Still needed:** `BRIDGE_TOKEN` and `HUMAN_ADDRESS` are not in `.env.example`, and the channel
+stays shut until both are set.
 
 ---
 
@@ -73,12 +134,12 @@ throws on it, deliberately, so nobody deploys against a guess.
 ## 5. Is the EIP-7951 P256VERIFY precompile live on Sepolia? — Claude (Ryan Zander), 2026-09-09,
 corrected same day after code review
 **Why it matters:** the human key is a Secure Enclave P-256 key. If the chain cannot verify a
-P-256 signature natively, FlippyGate must staticcall a Solidity verifier instead (~330k gas).
+P-256 signature natively, TappyGate must staticcall a Solidity verifier instead (~330k gas).
 **Answer:** LIVE at `0x0000000000000000000000000000000000000100`. Sepolia (chain id 11155111)
 returns `0x000...0001` for a valid signature as of 2026-09-09. An earlier run of this spike
 reported ABSENT; that was a false negative in the probe, not the chain — see "what went wrong"
 below. Fusaka's published scope was correct all along.
-**Evidence:** `pnpm --filter @flippy/contracts exec tsx script/checkP256.ts` against two
+**Evidence:** `pnpm --filter @tappy/contracts exec tsx script/checkP256.ts` against two
 independent Sepolia RPCs, both now printing `PRECOMPILE LIVE`:
 - `https://ethereum-sepolia-rpc.publicnode.com` → `chain 11155111`,
   `returned 0x0000000000000000000000000000000000000000000000000000000000000001`.

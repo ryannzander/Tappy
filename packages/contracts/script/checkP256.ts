@@ -3,7 +3,7 @@
  * A known-good vector must return 32 bytes of 1. Anything else means the
  * fallback verifier is required (see spec §4.3).
  *
- * Run: pnpm --filter @flippy/contracts exec tsx script/checkP256.ts
+ * Run: pnpm --filter @tappy/contracts exec tsx script/checkP256.ts
  *
  * Import paths below are for @noble/curves@2.x / @noble/hashes@2.x, the
  * versions pnpm actually installed here. v1.x used @noble/curves/p256 and

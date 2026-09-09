@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {FlippyGate} from "../src/FlippyGate.sol";
+import {TappyGate} from "../src/TappyGate.sol";
 import {MockToken} from "../src/MockToken.sol";
 import {MockSwap} from "../src/MockSwap.sol";
 
@@ -24,8 +24,8 @@ contract CallTarget {
     }
 }
 
-contract FlippyGateTest is Test {
-    FlippyGate gate;
+contract TappyGateTest is Test {
+    TappyGate gate;
     MockToken token;
     MockSwap swap;
     CallTarget callTarget;
@@ -40,7 +40,7 @@ contract FlippyGateTest is Test {
     function setUp() public {
         agent = vm.addr(agentKey);
         human = vm.addr(humanKey);
-        gate = new FlippyGate(agent, human, bytes32(0), bytes32(0), address(0));
+        gate = new TappyGate(agent, human, bytes32(0), bytes32(0), address(0));
         token = new MockToken();
         swap = new MockSwap(token);
         callTarget = new CallTarget();
@@ -95,14 +95,14 @@ contract FlippyGateTest is Test {
     function test_reverts_when_agent_signature_is_wrong() public {
         uint256 deadline = block.timestamp + 600;
         bytes32 d = _digest(recipient, 1 ether, "", deadline);
-        vm.expectRevert(FlippyGate.BadAgentSig.selector);
+        vm.expectRevert(TappyGate.BadAgentSig.selector);
         gate.execute(recipient, 1 ether, "", deadline, _sign(strangerKey, d), _sign(humanKey, d));
     }
 
     function test_reverts_when_human_signature_is_wrong() public {
         uint256 deadline = block.timestamp + 600;
         bytes32 d = _digest(recipient, 1 ether, "", deadline);
-        vm.expectRevert(FlippyGate.BadHumanSig.selector);
+        vm.expectRevert(TappyGate.BadHumanSig.selector);
         gate.execute(recipient, 1 ether, "", deadline, _sign(agentKey, d), _sign(strangerKey, d));
     }
 
@@ -111,7 +111,7 @@ contract FlippyGateTest is Test {
         uint256 deadline = block.timestamp + 600;
         bytes32 d = _digest(recipient, 1 ether, "", deadline);
         bytes memory agentSig = _sign(agentKey, d);
-        vm.expectRevert(FlippyGate.BadHumanSig.selector);
+        vm.expectRevert(TappyGate.BadHumanSig.selector);
         gate.execute(recipient, 1 ether, "", deadline, agentSig, agentSig);
         assertEq(recipient.balance, 0);
     }
@@ -119,7 +119,7 @@ contract FlippyGateTest is Test {
     function test_reverts_when_signatures_are_swapped() public {
         uint256 deadline = block.timestamp + 600;
         bytes32 d = _digest(recipient, 1 ether, "", deadline);
-        vm.expectRevert(FlippyGate.BadAgentSig.selector);
+        vm.expectRevert(TappyGate.BadAgentSig.selector);
         gate.execute(recipient, 1 ether, "", deadline, _sign(humanKey, d), _sign(agentKey, d));
     }
 
@@ -130,7 +130,7 @@ contract FlippyGateTest is Test {
         bytes memory h = _sign(humanKey, d);
 
         gate.execute(recipient, 1 ether, "", deadline, a, h);
-        vm.expectRevert(FlippyGate.BadAgentSig.selector); // nonce moved, so the digest no longer matches
+        vm.expectRevert(TappyGate.BadAgentSig.selector); // nonce moved, so the digest no longer matches
         gate.execute(recipient, 1 ether, "", deadline, a, h);
     }
 
@@ -138,7 +138,7 @@ contract FlippyGateTest is Test {
         uint256 deadline = block.timestamp + 600;
         bytes32 d = _digest(recipient, 1 ether, "", deadline);
         vm.warp(deadline + 1);
-        vm.expectRevert(FlippyGate.Expired.selector);
+        vm.expectRevert(TappyGate.Expired.selector);
         gate.execute(recipient, 1 ether, "", deadline, _sign(agentKey, d), _sign(humanKey, d));
     }
 
@@ -162,9 +162,9 @@ contract FlippyGateTest is Test {
     }
 
     function test_constructor_rejects_zero_addresses() public {
-        vm.expectRevert(FlippyGate.ZeroAddress.selector);
-        new FlippyGate(address(0), human, bytes32(0), bytes32(0), address(0));
-        vm.expectRevert(FlippyGate.NoHumanAuthority.selector);
-        new FlippyGate(agent, address(0), bytes32(0), bytes32(0), address(0));
+        vm.expectRevert(TappyGate.ZeroAddress.selector);
+        new TappyGate(address(0), human, bytes32(0), bytes32(0), address(0));
+        vm.expectRevert(TappyGate.NoHumanAuthority.selector);
+        new TappyGate(agent, address(0), bytes32(0), bytes32(0), address(0));
     }
 }
