@@ -8,8 +8,8 @@ settled — do not reopen those without being asked.
 
 ## Layout
 
-- `apps/web` — Next.js 15 App Router + tRPC v11 + Drizzle + Tailwind (T3). Chat UI, agent loop,
-  wallet panel, mock shop, relayer.
+- `apps/hub` — Next.js 15 App Router + tRPC v11 + Drizzle (T3). API only: agent loop,
+  proposal store, relayer, the iOS and bridge surfaces.
 - `apps/bridge` — Node process on the laptop with the Flipper. USB serial, holds the human key in v1.
 - `packages/protocol` — shared types, the EIP-712 digest, `HumanSigner`, `MockHumanSigner`.
 - `packages/contracts` — Foundry. `FlippyGate` is the 2-of-2 gate.
