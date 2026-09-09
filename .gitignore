@@ -31,3 +31,6 @@ apps/*/proposals.jsonl
 apps/bridge/key.json
 
 .vercel
+
+# Hub demo state — in-memory would not survive Next's per-route module instances.
+.tappy-state.json
