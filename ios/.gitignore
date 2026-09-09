@@ -1,0 +1,4 @@
+Tappy.xcodeproj/
+.build/
+.swiftpm/
+DerivedData/
