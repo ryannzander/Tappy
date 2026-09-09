@@ -36,6 +36,10 @@ targets:
         # and nothing else — it is not NSAllowsArbitraryLoads.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+          # A raw 192.168.x.x over plain HTTP is refused on a physical device even with
+          # NSAllowsLocalNetworking. Testnet demo against a laptop on the same Wi-Fi; this
+          # must never ship to anyone.
+          NSAllowsArbitraryLoads: true
         NSLocalNetworkUsageDescription: Tappy talks to the wallet hub running on your computer over this network.
         # Without this the Dynamic Island simply never appears, with no error anywhere.
         NSSupportsLiveActivities: true
