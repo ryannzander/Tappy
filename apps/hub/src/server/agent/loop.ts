@@ -1,7 +1,8 @@
 import OpenAI from "openai";
 import { formatEther, isAddress, type Address } from "viem";
-import { deployment, agentAccount, ethUsd, gateBalanceWei } from "../tappy/chain.js";
-import { createProposal, sendAction, swapAction } from "../tappy/proposals.js";
+import { findToken, isNative, toBaseUnits } from "@tappy/protocol";
+import { deployment, agentAccount, ethUsd, gateBalanceWei, holdings, knownTokens } from "../tappy/chain.js";
+import { createProposal, sendAction, sendTokenAction, swapAction } from "../tappy/proposals.js";
 import {
   addMessage,
   getProposal,
@@ -21,7 +22,8 @@ const SYSTEM = `You control a crypto wallet on the Sepolia testnet that is gated
 You hold one key. A human holds the other, on a physical device they are holding — a Flipper Zero, or an iPhone. You can ONLY propose transactions — you can never execute one. Every proposal appears on the human's device, where they physically approve or decline it. That is the entire point of the system, and you should be matter-of-fact about it rather than apologetic.
 
 Rules:
-- Use propose_send to move ETH, propose_swap to buy the demo token (FLIP) with ETH.
+- Use propose_send to move ETH, propose_send_token to move any other coin the wallet holds (USDC, LINK, WETH, FLIP), and propose_swap to buy FLIP with ETH.
+- The wallet holds several coins. get_wallet lists them with balances in both coin units and dollars. When the user says "send $20" without naming a coin, use ETH unless another coin is clearly meant; when they name one, use it.
 - After proposing, tell the user plainly that it is waiting on their device. Do NOT claim a transaction succeeded — you will not know until its status reads EXECUTED, and you usually will not see that in this turn.
 - Talk to the user in US DOLLARS. The tools take ETH as decimal strings, so convert: divide the dollar amount by ethUsdPrice from get_wallet. Call get_wallet first if you do not know the price yet.
 - Keep amounts small — under $150 — unless the user insists. This is testnet money.
@@ -68,6 +70,29 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       required: ["amountEth"],
       additionalProperties: false,
     },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "propose_send_token",
+      description:
+        "Propose sending an ERC-20 token (USDC, LINK, WETH, FLIP). Returns a proposal id; the " +
+        "human must approve it on their device.",
+      parameters: {
+        type: "object",
+        properties: {
+          symbol: { type: "string", description: 'Token symbol, e.g. "USDC"' },
+          to: { type: "string", description: "0x-prefixed recipient address" },
+          amount: {
+            type: "string",
+            description: 'Amount in the token\'s own units as a decimal string, e.g. "12.50" for USDC',
+          },
+          memo: { type: "string", description: "Optional note for the human" },
+        },
+        required: ["symbol", "to", "amount"],
+        additionalProperties: false,
+      },
     },
   },
   {
@@ -167,6 +192,7 @@ async function runTool(name: string, input: Record<string, unknown>, created: st
         agent: agentAccount().address,
         approvalDevices: listDevices().map((x) => ({ label: x.label, kind: x.kind })),
         note: listDevices().length === 0 ? "No phone registered yet — nothing can be approved." : undefined,
+        holdings: await holdings(),
         ...spendSummary(await ethUsd(), await gateBalanceWei()),
       });
     }
@@ -176,6 +202,37 @@ async function runTool(name: string, input: Record<string, unknown>, created: st
       const p = await createProposal(sendAction(to as Address, String(input.amountEth), input.memo as string | undefined));
       created.push(p.id);
       return JSON.stringify({ proposalId: p.id, status: p.status, awaiting: "human approval on the phone" });
+    }
+    case "propose_send_token": {
+      const to = String(input.to ?? "");
+      if (!isAddress(to)) return JSON.stringify({ error: `"${to}" is not a valid address` });
+
+      const token = findToken(knownTokens(), String(input.symbol ?? ""));
+      if (!token || isNative(token)) {
+        return JSON.stringify({
+          error: `unknown token "${input.symbol}". Use propose_send for ETH.`,
+          known: knownTokens().filter((t) => !isNative(t)).map((t) => t.symbol),
+        });
+      }
+
+      let amountBase: bigint;
+      try {
+        amountBase = toBaseUnits(String(input.amount), token.decimals);
+      } catch (err) {
+        return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
+      }
+      if (amountBase <= 0n) return JSON.stringify({ error: "amount must be greater than zero" });
+
+      const p = await createProposal(
+        sendTokenAction(
+          { address: token.address!, symbol: token.symbol, decimals: token.decimals },
+          to as Address,
+          amountBase,
+          input.memo as string | undefined,
+        ),
+      );
+      created.push(p.id);
+      return JSON.stringify({ proposalId: p.id, status: p.status, awaiting: "human approval on the device" });
     }
     case "propose_swap": {
       const p = await createProposal(swapAction(String(input.amountEth)));

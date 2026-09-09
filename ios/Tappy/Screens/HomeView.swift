@@ -19,6 +19,7 @@ struct HomeView: View {
                         .foregroundStyle(Theme.ink)
                     chips
                     balanceCard
+                    holdings
                     security
                     transactions
                     Spacer(minLength: 12)
@@ -81,7 +82,7 @@ struct HomeView: View {
                     Circle().fill(Theme.ink).frame(width: 46, height: 46)
                     Text("Ξ").font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.lime)
                 }
-                Text("USD").font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.ink)
+                Text("Total").font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
             }
             Spacer(minLength: 40)
@@ -90,17 +91,54 @@ struct HomeView: View {
                 Text(state.wallet.map { Format.short($0.gate, lead: 6, tail: 4) } ?? "not connected")
                     .font(.system(size: 14)).foregroundStyle(Theme.dim)
             }
-            Text(state.wallet.map { "$\($0.balanceUsd)" } ?? "—")
+            Text(state.wallet.map { "$\($0.totalUsd)" } ?? "—")
                 .font(.system(size: 38, weight: .bold))
                 .foregroundStyle(Theme.ink)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
-            Text(state.wallet.map { "\($0.balanceEth.prefix(8)) ETH" } ?? " ")
+            Text(state.wallet.map { "\($0.holdings.count) coin\($0.holdings.count == 1 ? "" : "s")" } ?? " ")
                 .font(.system(size: 14)).foregroundStyle(Theme.dim)
         }
         .padding(18)
         .frame(maxWidth: .infinity, minHeight: 210, alignment: .topLeading)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    /// What the wallet actually holds. Empty tokens are filtered out by the hub, so this is
+    /// holdings rather than a catalogue of everything that exists.
+    private var holdings: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Coins").font(.system(size: 24, weight: .bold)).foregroundStyle(Theme.ink)
+            ForEach(state.wallet?.holdings ?? []) { coin in
+                Button {
+                    Task { await state.ask("I want to send some \(coin.symbol) — who should it go to?") }
+                } label: {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            Circle().fill(coin.isNative ? Theme.ink : Theme.lime)
+                                .frame(width: 42, height: 42)
+                            Text(String(coin.symbol.prefix(2)).uppercased())
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(coin.isNative ? Theme.lime : Theme.ink)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(coin.symbol)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Theme.ink)
+                            Text(coin.name).font(.system(size: 13)).foregroundStyle(Theme.dim)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("$" + coin.usd)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Theme.ink)
+                            Text(coin.amount).font(.system(size: 13)).foregroundStyle(Theme.dim)
+                        }
+                    }
+                    .padding(.vertical, 6)
+                }
+            }
+        }
     }
 
     private var security: some View {
@@ -174,7 +212,7 @@ struct TransactionRow: View {
                 Text("- " + Format.usd(wei: proposal.action.amountWei, rate: rate))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(colour)
-                Text(Format.eth(wei: proposal.action.amountWei))
+                Text(Format.asset(proposal.action, rate: rate))
                     .font(.system(size: 13)).foregroundStyle(Theme.dim)
             }
         }

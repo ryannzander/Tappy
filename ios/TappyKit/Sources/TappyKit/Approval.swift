@@ -77,6 +77,14 @@ public enum Format {
         return f.string(from: NSNumber(value: dollars)) ?? "$0.00"
     }
 
+    /// Renders an amount in whatever asset it is, with the asset's own decimals. Falls back to
+    /// the symbol when there is no price, because a made-up dollar figure is worse than none.
+    public static func asset(_ action: MobileProposal.Action, rate: Double) -> String {
+        let amount = eth(wei: action.amountWei, decimals: action.decimals, places: 4)
+            .replacingOccurrences(of: " ETH", with: "")
+        return "\(amount) \(action.symbol)"
+    }
+
     public static func short(_ hex: String, lead: Int = 6, tail: Int = 4) -> String {
         hex.count <= lead + tail + 2 ? hex : "\(hex.prefix(lead))…\(hex.suffix(tail))"
     }

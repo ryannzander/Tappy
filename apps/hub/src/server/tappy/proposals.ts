@@ -1,4 +1,4 @@
-import { encodeFunctionData, parseEther, type Address, type Hex } from "viem";
+import { encodeFunctionData, erc20Abi, parseEther, type Address, type Hex } from "viem";
 import { sepolia } from "viem/chains";
 import type { Action, Call, Proposal } from "@tappy/protocol";
 import { MockSwapAbi } from "@tappy/contracts";
@@ -37,6 +37,18 @@ function callFor(action: Action, swap: Address): Call {
   switch (action.kind) {
     case "send":
       return { to: action.to, value: action.valueWei, data: "0x" };
+    case "sendToken":
+      // The gate executes arbitrary calldata, so a token transfer needs no contract change:
+      // the call goes to the token, carries no ether, and the amount lives in `data`.
+      return {
+        to: action.token,
+        value: 0n,
+        data: encodeFunctionData({
+          abi: erc20Abi,
+          functionName: "transfer",
+          args: [action.to, action.amount],
+        }) as Hex,
+      };
     case "swap":
       return {
         to: swap,
@@ -52,6 +64,23 @@ function callFor(action: Action, swap: Address): Call {
 
 export function sendAction(to: Address, amountEth: string, memo?: string): Action {
   return { kind: "send", to, valueWei: parseEther(amountEth), ...(memo ? { memo } : {}) };
+}
+
+export function sendTokenAction(
+  token: { address: Address; symbol: string; decimals: number },
+  to: Address,
+  amountBase: bigint,
+  memo?: string,
+): Action {
+  return {
+    kind: "sendToken",
+    token: token.address,
+    to,
+    amount: amountBase,
+    symbol: token.symbol,
+    decimals: token.decimals,
+    ...(memo ? { memo } : {}),
+  };
 }
 
 export function swapAction(amountEth: string): Action {

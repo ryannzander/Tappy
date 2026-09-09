@@ -55,7 +55,7 @@ export const SEPOLIA_TOKENS: TokenInfo[] = [
 
 /** FLIP's address is only known once the mocks are deployed, so it is appended at runtime. */
 export function flipToken(address: Address): TokenInfo {
-  return { symbol: "FLIP", name: "Flippy Test Token", decimals: 18, address, fixedUsd: 0.25 };
+  return { symbol: "FLIP", name: "Tappy Test Token", decimals: 18, address, fixedUsd: 0.25 };
 }
 
 export function findToken(tokens: TokenInfo[], symbolOrAddress: string): TokenInfo | undefined {

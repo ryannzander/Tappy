@@ -30,7 +30,8 @@ struct TappyApp: App {
 /// Small enough to hold in your head, which matters more than layering on a one-week build.
 @MainActor
 final class AppState: ObservableObject {
-    @AppStorage("hubURL") var hubURL: String = "http://localhost:3000"
+    /// 3100, because 3000 is the port every other Next project on a laptop already took.
+    @AppStorage("hubURL") var hubURL: String = "http://localhost:3100"
 
     @Published var key: HumanKey?
     @Published var registration: Registration?

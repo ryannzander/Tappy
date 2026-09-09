@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  erc20Abi,
   createPublicClient,
   createWalletClient,
   http,
@@ -14,7 +15,15 @@ import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { p256 } from "@noble/curves/nist.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { proposalDigest, type Call } from "@tappy/protocol";
+import {
+  SEPOLIA_TOKENS,
+  flipToken,
+  fromBaseUnits,
+  isNative,
+  proposalDigest,
+  type Call,
+  type TokenInfo,
+} from "@tappy/protocol";
 import { TappyGateAbi } from "@tappy/contracts";
 
 function required(name: string): string {
@@ -171,6 +180,94 @@ export async function ethUsd(): Promise<number> {
     return usd;
   } catch {
     return priceCache?.usd ?? FALLBACK_ETH_USD;
+  }
+}
+
+/** Every token the wallet knows about, including the demo token from this deployment. */
+export function knownTokens(): TokenInfo[] {
+  return [...SEPOLIA_TOKENS, flipToken(deployment().token)];
+}
+
+export interface Holding {
+  symbol: string;
+  name: string;
+  decimals: number;
+  address?: Address;
+  amount: string;
+  amountBase: string;
+  usd: string;
+}
+
+/**
+ * What the wallet actually holds. Balances are read for every known token and the empty ones
+ * are dropped, so the list is holdings rather than a catalogue — except the native coin, which
+ * is always shown because a zero ETH balance is itself the thing you need to know.
+ */
+export async function holdings(): Promise<Holding[]> {
+  const client = publicClient();
+  const gate = deployment().gate;
+  const tokens = knownTokens();
+
+  const balances = await Promise.all(
+    tokens.map(async (t) => {
+      try {
+        if (isNative(t)) return await client.getBalance({ address: gate });
+        return (await client.readContract({
+          address: t.address!,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [gate],
+        })) as bigint;
+      } catch {
+        // A token that cannot be read is reported as empty rather than failing the whole page.
+        return 0n;
+      }
+    }),
+  );
+
+  const prices = await Promise.all(tokens.map((t) => tokenUsd(t)));
+
+  return tokens
+    .map((t, i) => {
+      const raw = balances[i] ?? 0n;
+      const amount = fromBaseUnits(raw, t.decimals);
+      return {
+        symbol: t.symbol,
+        name: t.name,
+        decimals: t.decimals,
+        ...(t.address ? { address: t.address } : {}),
+        amount,
+        amountBase: raw.toString(),
+        usd: (Number(amount) * (prices[i] ?? 0)).toFixed(2),
+      };
+    })
+    .filter((h, i) => isNative(tokens[i]!) || h.amountBase !== "0");
+}
+
+/** A fixed price for demo tokens, a real one for anything with a market. */
+export async function tokenUsd(token: TokenInfo): Promise<number> {
+  if (token.fixedUsd !== undefined) return token.fixedUsd;
+  if (!token.pair) return 0;
+  if (token.pair === "ETH-USD") return ethUsd();
+  return spot(token.pair);
+}
+
+const spotCache = new Map<string, { usd: number; at: number }>();
+
+async function spot(pair: string): Promise<number> {
+  const hit = spotCache.get(pair);
+  if (hit && Date.now() - hit.at < 60_000) return hit.usd;
+  try {
+    const res = await fetch(`https://api.coinbase.com/v2/prices/${pair}/spot`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    const body = (await res.json()) as { data?: { amount?: string } };
+    const usd = Number(body.data?.amount);
+    if (!Number.isFinite(usd) || usd <= 0) throw new Error("bad price payload");
+    spotCache.set(pair, { usd, at: Date.now() });
+    return usd;
+  } catch {
+    return hit?.usd ?? 0;
   }
 }
 

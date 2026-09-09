@@ -11,6 +11,16 @@ const bigintish = z.union([z.bigint(), z.string(), z.number()]).transform((v) =>
 export const actionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("send"), to: addressSchema, valueWei: bigintish, memo: z.string().optional() }),
   z.object({
+    kind: z.literal("sendToken"),
+    token: addressSchema,
+    to: addressSchema,
+    /** Base units, not a decimal — USDC has 6 decimals and ETH has 18. */
+    amount: bigintish,
+    symbol: z.string(),
+    decimals: z.number(),
+    memo: z.string().optional(),
+  }),
+  z.object({
     kind: z.literal("swap"),
     dex: addressSchema,
     sellWei: bigintish,

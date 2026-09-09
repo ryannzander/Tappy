@@ -23,10 +23,11 @@ public struct MobileProposal: Decodable, Identifiable, Sendable, Equatable {
     /// re-derives the digest from `call` and refuses to sign if the two disagree.
     public enum Action: Decodable, Sendable, Equatable {
         case send(to: String, valueWei: String, memo: String?)
+        case sendToken(token: String, to: String, amount: String, symbol: String, decimals: Int)
         case swap(dex: String, sellWei: String, tokenOut: String)
 
         private enum Keys: String, CodingKey {
-            case kind, to, valueWei, memo, dex, sellWei, tokenOut
+            case kind, to, valueWei, memo, dex, sellWei, tokenOut, token, amount, symbol, decimals
         }
 
         public init(from decoder: Decoder) throws {
@@ -37,6 +38,14 @@ public struct MobileProposal: Decodable, Identifiable, Sendable, Equatable {
                     to: try c.decode(String.self, forKey: .to),
                     valueWei: try c.decode(String.self, forKey: .valueWei),
                     memo: try c.decodeIfPresent(String.self, forKey: .memo)
+                )
+            case "sendToken":
+                self = .sendToken(
+                    token: try c.decode(String.self, forKey: .token),
+                    to: try c.decode(String.self, forKey: .to),
+                    amount: try c.decode(String.self, forKey: .amount),
+                    symbol: try c.decode(String.self, forKey: .symbol),
+                    decimals: try c.decode(Int.self, forKey: .decimals)
                 )
             case "swap":
                 self = .swap(
@@ -55,21 +64,45 @@ public struct MobileProposal: Decodable, Identifiable, Sendable, Equatable {
 
         public var verb: String {
             switch self {
-            case .send: return "SEND"
+            case .send, .sendToken: return "SEND"
             case .swap: return "SWAP"
             }
         }
 
+        /// The raw amount in the asset's own base units.
         public var amountWei: String {
             switch self {
             case .send(_, let v, _): return v
+            case .sendToken(_, _, let v, _, _): return v
             case .swap(_, let v, _): return v
             }
+        }
+
+        /// ETH has 18; USDC has 6. Formatting a token as ETH renders it as zero.
+        public var decimals: Int {
+            switch self {
+            case .send, .swap: return 18
+            case .sendToken(_, _, _, _, let d): return d
+            }
+        }
+
+        public var symbol: String {
+            switch self {
+            case .send, .swap: return "ETH"
+            case .sendToken(_, _, _, let s, _): return s
+            }
+        }
+
+        /// True when the amount is the chain's own coin, so it can be priced from the ETH rate.
+        public var isNative: Bool {
+            if case .sendToken = self { return false }
+            return true
         }
 
         public var counterparty: String {
             switch self {
             case .send(let to, _, _): return to
+            case .sendToken(_, let to, _, _, _): return to
             case .swap(let dex, _, _): return "DEX \(dex)"
             }
         }
@@ -85,6 +118,20 @@ public struct WalletInfo: Decodable, Sendable {
     public let balanceEth: String
     public let balanceUsd: String
     public let ethUsd: Double
+    public let totalUsd: String
+    public let holdings: [Holding]
+
+    public struct Holding: Decodable, Identifiable, Sendable, Equatable {
+        public let symbol: String
+        public let name: String
+        public let decimals: Int
+        public let address: String?
+        public let amount: String
+        public let usd: String
+
+        public var id: String { address ?? symbol }
+        public var isNative: Bool { address == nil }
+    }
     public let agent: String
     public let humanQx: String
     public let humanQy: String

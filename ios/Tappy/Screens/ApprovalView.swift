@@ -54,7 +54,7 @@ struct ApprovalView: View {
                 .lineLimit(1)
                 .padding(.horizontal, 20)
 
-            Text(Format.eth(wei: proposal.action.amountWei))
+            Text(Format.asset(proposal.action, rate: state.rate))
                 .font(.system(size: 15)).foregroundStyle(Theme.dim)
 
             HStack(spacing: 6) {
