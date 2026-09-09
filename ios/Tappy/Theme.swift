@@ -55,3 +55,22 @@ struct PrimaryButtonStyle: ButtonStyle {
             .opacity(configuration.isPressed ? 0.85 : 1)
     }
 }
+
+extension View {
+    /// iOS 26's Liquid Glass where it exists, a material where it does not.
+    ///
+    /// Gated rather than raising the deployment target: the whole app should still install on a
+    /// phone that has not been updated, and a demo that cannot be installed is not a demo.
+    @ViewBuilder
+    func liquidGlass(_ shape: some Shape, tint: Color? = nil) -> some View {
+        if #available(iOS 26.0, *) {
+            if let tint {
+                self.glassEffect(.regular.tint(tint).interactive(), in: shape)
+            } else {
+                self.glassEffect(.regular.interactive(), in: shape)
+            }
+        } else {
+            self.background(.ultraThinMaterial, in: shape)
+        }
+    }
+}

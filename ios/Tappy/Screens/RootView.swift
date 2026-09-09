@@ -75,13 +75,13 @@ struct OnboardingView: View {
                 TappyMark(size: 180)
                 Spacer()
 
-                Text("Your AI can ask.\nOnly you can approve.")
+                Text("The smarter and faster wallet")
                     .font(.system(size: 33, weight: .bold))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Theme.ink)
                     .padding(.horizontal, 24)
 
-                Text("Every transaction is signed by a key sealed inside this iPhone.")
+                Text("Ask for anything. Nothing moves until you approve it with your face.")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Theme.dim)
@@ -123,36 +123,37 @@ struct OnboardingView: View {
 }
 
 struct MainTabs: View {
-    @State private var tab = 0
+    @EnvironmentObject private var state: AppState
 
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
-                switch tab {
-                case 0: WalletView()
+                switch state.tab {
+                case 1: WalletView()
                 default: ChatView()
                 }
             }
 
             HStack(spacing: 0) {
-                tabButton(0, "house.fill", "Wallet")
-                tabButton(1, "bubble.left.fill", "Chat")
+                tabButton(0, "bubble.left.fill", "Chat")
+                tabButton(1, "wallet.bifold.fill", "Wallet")
             }
-            .padding(.top, 10)
-            .padding(.bottom, 2)
-            .background(.regularMaterial)
-            .overlay(alignment: .top) { Theme.hairline.frame(height: 0.5) }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 8)
+            .liquidGlass(.capsule)
+            .padding(.horizontal, 60)
+            .padding(.bottom, 6)
         }
         .ignoresSafeArea(.keyboard)
     }
 
     private func tabButton(_ index: Int, _ icon: String, _ label: String) -> some View {
-        Button { tab = index } label: {
+        Button { state.tab = index } label: {
             VStack(spacing: 3) {
                 Image(systemName: icon).font(.system(size: 19))
                 Text(label).font(.system(size: 10, weight: .medium))
             }
-            .foregroundStyle(tab == index ? Theme.accent : Theme.dim)
+            .foregroundStyle(state.tab == index ? Theme.accent : Theme.dim)
             .frame(maxWidth: .infinity)
         }
     }

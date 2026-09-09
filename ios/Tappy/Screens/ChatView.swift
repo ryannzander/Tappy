@@ -7,9 +7,9 @@ struct ChatView: View {
     @FocusState private var composerFocused: Bool
 
     private let suggestions: [(String, String)] = [
-        ("Send 0.01 ETH", "to a friend's address"),
-        ("Swap for FLIP", "on the demo exchange"),
-        ("What's in the wallet?", "balance and keys"),
+        ("Send $25", "to an address"),
+        ("Buy $25 of FLIP", "on the demo exchange"),
+        ("What's in my wallet?", "balance and keys"),
         ("Tell me about FLIP", "read the token listing"),
     ]
 
@@ -27,12 +27,7 @@ struct ChatView: View {
 
     private var header: some View {
         HStack {
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .frame(width: 38, height: 38)
-                .background(Theme.surface, in: Circle())
-
+            Spacer().frame(width: 38)
             Spacer()
 
             HStack(spacing: 4) {
@@ -49,7 +44,7 @@ struct ChatView: View {
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 38, height: 38)
-                    .background(Theme.surface, in: Circle())
+                    .liquidGlass(.circle)
             }
         }
         .padding(.horizontal, 16)
@@ -64,7 +59,7 @@ struct ChatView: View {
                         BubbleView(bubble: bubble).id(bubble.id)
                     }
                     ForEach(state.recent) { proposal in
-                        ProposalCard(proposal: proposal).id(proposal.id)
+                        ProposalCard(proposal: proposal, rate: state.rate).id(proposal.id)
                     }
                     if state.busy { TypingDots() }
                 }
@@ -84,7 +79,7 @@ struct ChatView: View {
             HStack(spacing: 10) {
                 ForEach(suggestions, id: \.0) { title, subtitle in
                     Button {
-                        Task { await state.send(title) }
+                        Task { await state.ask(title) }
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(title)
@@ -130,12 +125,9 @@ struct ChatView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(
-            Capsule()
-                .fill(Theme.bg)
-                .shadow(color: .black.opacity(0.10), radius: 14, y: 3)
-        )
-        .overlay(Capsule().stroke(Theme.hairline, lineWidth: 1))
+        .liquidGlass(.capsule)
+        .overlay(Capsule().stroke(Theme.hairline.opacity(0.7), lineWidth: 1))
+        .shadow(color: .black.opacity(0.06), radius: 12, y: 3)
         .padding(.horizontal, 14)
         .padding(.bottom, 10)
     }
@@ -195,6 +187,7 @@ struct TypingDots: View {
 
 struct ProposalCard: View {
     let proposal: MobileProposal
+    let rate: Double
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -212,9 +205,12 @@ struct ProposalCard: View {
                 }
             }
 
-            Text(Format.eth(wei: proposal.action.amountWei))
+            Text(Format.usd(wei: proposal.action.amountWei, rate: rate))
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.ink)
+            Text(Format.eth(wei: proposal.action.amountWei))
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.dim)
 
             Text(Format.short(proposal.action.counterparty, lead: 12, tail: 6))
                 .font(.system(size: 13, design: .monospaced))

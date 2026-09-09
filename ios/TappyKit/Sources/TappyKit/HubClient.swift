@@ -83,6 +83,8 @@ public struct WalletInfo: Decodable, Sendable {
     public let gate: String
     public let chain: String
     public let balanceEth: String
+    public let balanceUsd: String
+    public let ethUsd: Double
     public let agent: String
     public let humanQx: String
     public let humanQy: String

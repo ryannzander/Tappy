@@ -57,6 +57,26 @@ public enum Format {
         return "\(whole).\(fraction) ETH"
     }
 
+    /// Wei -> dollars. The ETH figure is still the truth on-chain; dollars are what a person
+    /// can judge at a glance, and judging the amount is the entire job of the approval screen.
+    public static func usd(wei: String, rate: Double, decimals: Int = 18) -> String {
+        let digits = wei.filter(\.isNumber)
+        guard !digits.isEmpty, rate > 0 else { return "$0.00" }
+        let padded = String(repeating: "0", count: max(0, decimals + 1 - digits.count)) + digits
+        let whole = Double(String(padded.dropLast(decimals))) ?? 0
+        let fraction = Double("0." + String(padded.suffix(decimals))) ?? 0
+        let dollars = (whole + fraction) * rate
+
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = "USD"
+        f.locale = Locale(identifier: "en_US")
+        // Sub-cent amounts would all render as $0.00 and look identical, which is exactly the
+        // confusion an approval screen must not create.
+        f.maximumFractionDigits = dollars < 1 ? 4 : 2
+        return f.string(from: NSNumber(value: dollars)) ?? "$0.00"
+    }
+
     public static func short(_ hex: String, lead: Int = 6, tail: Int = 4) -> String {
         hex.count <= lead + tail + 2 ? hex : "\(hex.prefix(lead))…\(hex.suffix(tail))"
     }

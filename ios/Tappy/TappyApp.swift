@@ -26,6 +26,9 @@ final class AppState: ObservableObject {
     @Published var recent: [MobileProposal] = []
     @Published var banner: String?
     @Published var busy = false
+    /// Which tab is showing. Lives here, not in the view, so a wallet button can hand the user
+    /// to the chat where its answer will actually appear.
+    @Published var tab = 0
 
     struct Bubble: Identifiable {
         let id = UUID()
@@ -34,6 +37,15 @@ final class AppState: ObservableObject {
     }
 
     private var poller: Task<Void, Never>?
+
+    /// Dollars per ETH, from the hub. Zero until the first wallet fetch lands.
+    var rate: Double { wallet?.ethUsd ?? 0 }
+
+    /// Sends a message AND shows the chat, so a tap on the wallet screen visibly does something.
+    func ask(_ text: String) async {
+        tab = 0
+        await send(text)
+    }
 
     var keyStatus: String {
         switch key?.kind {
@@ -83,7 +95,9 @@ final class AppState: ObservableObject {
             await track(reply.proposalIds)
             await refresh()
         } catch {
-            transcript.append(Bubble(mine: false, text: "⚠️ \(error.localizedDescription)"))
+            let message = error.localizedDescription
+            transcript.append(Bubble(mine: false, text: "⚠️ \(message)"))
+            banner = message
         }
     }
 
@@ -96,7 +110,7 @@ final class AppState: ObservableObject {
             let signature = try await Approval.sign(
                 proposal,
                 with: key,
-                reason: "Authorize \(proposal.action.verb) \(Format.eth(wei: proposal.action.amountWei))"
+                reason: "Authorize \(proposal.action.verb.capitalized) \(Format.usd(wei: proposal.action.amountWei, rate: rate))"
             )
             _ = try await client().approve(proposal.id, signature: signature)
             pending = nil
@@ -142,11 +156,15 @@ final class AppState: ObservableObject {
         // Anything still awaiting a human comes to the front of the app immediately.
         for proposal in recent where proposal.isPending {
             if let fresh = try? await hub.proposal(proposal.id), fresh.isPending {
-                if pending?.id != fresh.id { pending = fresh }
+                if pending?.id != fresh.id {
+                    pending = fresh
+                    LiveActivity.start(fresh, rate: rate)
+                }
                 return
             }
         }
         if let current = pending, let fresh = try? await hub.proposal(current.id) {
+            await LiveActivity.update(fresh, rate: rate)
             if fresh.isSettled { pending = nil }
         }
         await refreshStatusesOnly(hub)
@@ -155,7 +173,9 @@ final class AppState: ObservableObject {
     private func refreshStatusesOnly(_ hub: HubClient) async {
         var updated: [MobileProposal] = []
         for proposal in recent {
-            updated.append(proposal.isSettled ? proposal : ((try? await hub.proposal(proposal.id)) ?? proposal))
+            let fresh = proposal.isSettled ? proposal : ((try? await hub.proposal(proposal.id)) ?? proposal)
+            if fresh.status != proposal.status { await LiveActivity.update(fresh, rate: rate) }
+            updated.append(fresh)
         }
         if updated != recent { recent = updated }
     }
@@ -165,7 +185,10 @@ final class AppState: ObservableObject {
         for id in ids where !recent.contains(where: { $0.id == id }) {
             if let proposal = try? await hub.proposal(id) {
                 recent.insert(proposal, at: 0)
-                if proposal.isPending { pending = proposal }
+                if proposal.isPending {
+                    pending = proposal
+                    LiveActivity.start(proposal, rate: rate)
+                }
             }
         }
     }

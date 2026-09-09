@@ -148,4 +148,30 @@ export async function relayExecute(
   });
 }
 
+/**
+ * Sepolia ETH is worthless, but the demo reads better in dollars than in four decimal places
+ * of a testnet coin. Priced off real mainnet ETH so the numbers feel like money.
+ *
+ * Cached for a minute and falls back to a fixed rate: a price feed hiccup should never be the
+ * thing that breaks a demo, and the exact number does not matter to anything but the display.
+ */
+const FALLBACK_ETH_USD = 3000;
+let priceCache: { usd: number; at: number } | undefined;
+
+export async function ethUsd(): Promise<number> {
+  if (priceCache && Date.now() - priceCache.at < 60_000) return priceCache.usd;
+  try {
+    const res = await fetch("https://api.coinbase.com/v2/prices/ETH-USD/spot", {
+      signal: AbortSignal.timeout(3000),
+    });
+    const body = (await res.json()) as { data?: { amount?: string } };
+    const usd = Number(body.data?.amount);
+    if (!Number.isFinite(usd) || usd <= 0) throw new Error("bad price payload");
+    priceCache = { usd, at: Date.now() };
+    return usd;
+  } catch {
+    return priceCache?.usd ?? FALLBACK_ETH_USD;
+  }
+}
+
 export const explorerTx = (hash: string) => `https://sepolia.etherscan.io/tx/${hash}`;

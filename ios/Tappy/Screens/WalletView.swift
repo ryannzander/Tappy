@@ -43,7 +43,7 @@ struct WalletView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 38, height: 38)
-                    .background(Theme.surface, in: Circle())
+                    .liquidGlass(.circle)
             }
         }
         .padding(.top, 8)
@@ -51,8 +51,8 @@ struct WalletView: View {
 
     private var balance: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(state.wallet.map { "\($0.balanceEth.prefix(8)) ETH" } ?? "—")
-                .font(.system(size: 44, weight: .bold, design: .rounded))
+            Text(state.wallet.map { "$\($0.balanceUsd)" } ?? "—")
+                .font(.system(size: 52, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.ink)
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
@@ -62,7 +62,8 @@ struct WalletView: View {
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(Theme.accentSoft, in: Capsule())
                     .foregroundStyle(Theme.accent)
-                Text("testnet").font(.system(size: 13)).foregroundStyle(Theme.dim)
+                Text(state.wallet.map { "\($0.balanceEth.prefix(7)) ETH · testnet" } ?? "testnet")
+                    .font(.system(size: 13)).foregroundStyle(Theme.dim)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -70,10 +71,10 @@ struct WalletView: View {
 
     private var actions: some View {
         HStack(spacing: 10) {
-            actionTile("paperplane.fill", "Send", "send 0.01 ETH to ")
-            actionTile("arrow.2.squarepath", "Swap", "swap 0.01 ETH for FLIP")
-            actionTile("qrcode", "Receive", "what's my wallet address?")
-            actionTile("chart.line.uptrend.xyaxis", "Activity", "list my recent transactions")
+            actionTile("paperplane.fill", "Send", "I want to send some money — ask me for the amount and the address.")
+            actionTile("arrow.2.squarepath", "Swap", "Swap $25 of ETH for FLIP.")
+            actionTile("qrcode", "Receive", "What is my wallet address?")
+            actionTile("chart.line.uptrend.xyaxis", "Activity", "List my recent transactions and their status.")
         }
     }
 
@@ -81,7 +82,7 @@ struct WalletView: View {
     /// the chain — the agent proposes, you approve. That is the product, not a limitation.
     private func actionTile(_ icon: String, _ label: String, _ prompt: String) -> some View {
         Button {
-            Task { await state.send(prompt) }
+            Task { await state.ask(prompt) }
         } label: {
             VStack(spacing: 7) {
                 Image(systemName: icon).font(.system(size: 18)).foregroundStyle(Theme.accent)
@@ -89,7 +90,7 @@ struct WalletView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18))
+            .liquidGlass(.rect(cornerRadius: 18))
         }
     }
 
@@ -127,7 +128,7 @@ struct WalletView: View {
                     .foregroundStyle(Theme.dim)
                     .padding(.vertical, 8)
             } else {
-                ForEach(state.recent) { ProposalCard(proposal: $0) }
+                ForEach(state.recent) { ProposalCard(proposal: $0, rate: state.rate) }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

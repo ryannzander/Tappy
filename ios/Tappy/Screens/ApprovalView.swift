@@ -60,14 +60,16 @@ struct ApprovalView: View {
     }
 
     private var amount: some View {
-        VStack(spacing: 4) {
-            Text(Format.eth(wei: proposal.action.amountWei).replacingOccurrences(of: " ETH", with: ""))
+        VStack(spacing: 6) {
+            Text(Format.usd(wei: proposal.action.amountWei, rate: state.rate))
                 .font(.system(size: 62, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.ink)
                 .minimumScaleFactor(0.4)
                 .lineLimit(1)
                 .padding(.horizontal, 20)
-            Text("ETH").font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.dim)
+            Text(Format.eth(wei: proposal.action.amountWei))
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Theme.dim)
         }
     }
 

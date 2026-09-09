@@ -21,6 +21,7 @@ targets:
     dependencies:
       - package: TappyKit
         product: TappyKit
+      - target: TappyWidgets
     info:
       path: Tappy/Info.plist
       properties:
@@ -36,6 +37,8 @@ targets:
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         NSLocalNetworkUsageDescription: Tappy talks to the wallet hub running on your computer over this network.
+        # Without this the Dynamic Island simply never appears, with no error anywhere.
+        NSSupportsLiveActivities: true
     settings:
       base:
         MARKETING_VERSION: "1.0"
@@ -51,4 +54,27 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"
         ENABLE_PREVIEWS: YES
+        CODE_SIGN_STYLE: Automatic
+
+  TappyWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: TappyWidgets
+    dependencies:
+      - package: TappyKit
+        product: TappyKit
+    info:
+      path: TappyWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Tappy
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ryanzander.tappy.widgets
+        GENERATE_INFOPLIST_FILE: NO
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
         CODE_SIGN_STYLE: Automatic
