@@ -17,9 +17,11 @@ settled — do not reopen those without being asked.
 
 ## Rules specific to this repo
 
-- **Never edit `packages/protocol/vectors/execute.json`.** It is the frozen proof that Solidity and
-  TypeScript produce the same EIP-712 digest, asserted by `test/Digest.t.sol` and `digest.test.ts`.
-  If it changes, every signature breaks and the symptom is an unhelpful "bad signature".
+- **Never edit `packages/protocol/vectors/execute.json` or `vectors/p256.json`.** They are the
+  frozen proof that Solidity, TypeScript and Swift produce the same digest and the same P-256
+  message. `execute.json` is asserted by `test/Digest.t.sol` and `digest.test.ts`; `p256.json` by
+  `test/FlippyGateP256.t.sol`, `p256.test.ts` and `FlippyKitTests`. If either changes, every
+  signature breaks and the symptom is an unhelpful "bad signature".
 - **Never copy an ABI or a shared type.** Import from `@flippy/contracts` / `@flippy/protocol`.
 - **Anything reaching the chain or the device goes through `HumanSigner`.** That interface is why
   two thirds of the team can work without hardware. Do not add a code path that bypasses it.
