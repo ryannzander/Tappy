@@ -34,16 +34,22 @@ targets:
         NSFaceIDUsageDescription: Tappy uses Face ID to approve transactions with the key stored in this iPhone's Secure Enclave.
         # The hub runs on a laptop on the same Wi-Fi over plain HTTP. This permits exactly that
         # and nothing else — it is not NSAllowsArbitraryLoads.
+        # Covers .local names, which is how the app is meant to reach the hub —
+        # "http://your-mac.local:3100" needs no ATS exception and survives DHCP handing
+        # the laptop a new address. A raw 192.168.x.x over plain HTTP does need one, and
+        # that exception lives in Info-Debug.plist so it cannot reach a Release build.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
-          # A raw 192.168.x.x over plain HTTP is refused on a physical device even with
-          # NSAllowsLocalNetworking. Testnet demo against a laptop on the same Wi-Fi; this
-          # must never ship to anyone.
-          NSAllowsArbitraryLoads: true
         NSLocalNetworkUsageDescription: Tappy talks to the wallet hub running on your computer over this network.
         # Without this the Dynamic Island simply never appears, with no error anywhere.
         NSSupportsLiveActivities: true
     settings:
+      configs:
+        # Debug-only ATS relaxation, so connecting by raw IP works while testing and is
+        # structurally impossible to ship. Regenerate with scripts/make-debug-plist.py
+        # if Info.plist changes.
+        debug:
+          INFOPLIST_FILE: Tappy/Info-Debug.plist
       base:
         MARKETING_VERSION: "1.0"
         # Bundle IDs are globally unique. com.tappy.app was already taken, so this is
