@@ -8,7 +8,8 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    ANTHROPIC_API_KEY: z.string().min(1),
+    OPENAI_API_KEY: z.string().min(1),
+    OPENAI_MODEL: z.string().optional(),
     SEPOLIA_RPC_URL: z.string().url(),
     AGENT_KEY: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
     RELAYER_KEY: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
@@ -16,7 +17,8 @@ export const env = createEnv({
   client: {},
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_MODEL: process.env.OPENAI_MODEL,
     SEPOLIA_RPC_URL: process.env.SEPOLIA_RPC_URL,
     AGENT_KEY: process.env.AGENT_KEY,
     RELAYER_KEY: process.env.RELAYER_KEY,

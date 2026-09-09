@@ -27,4 +27,5 @@ Superseded by these: #1 (partly), #8, #9. Still binding: #2, #3, #4, #5, #6, #10
 | 17 | The NFC tap is read by the **Flipper**, not the iPhone | Core NFC needs a paid Apple Developer account we do not have. The Flipper has NFC hardware and needs no entitlement. Costs a Flipper C app, since mJS has no NFC module. | 2026-09-09 |
 | 18 | Two approval devices, one gate | Flipper approves with secp256k1 (65-byte sig), iPhone with a Secure Enclave P-256 key (64-byte sig). `FlippyGate` dispatches on signature length, so neither device knows the other exists. | 2026-09-09 |
 | 19 | The hub keeps state in memory, not Postgres | It is a four-minute demo. A database is one more thing that can break on stage, and nothing here is worth surviving a restart. Reverses the Supabase half of #9. | 2026-09-09 |
+| 20 | The agent runs on OpenAI (GPT), not Claude | Ryan's call, 2026-09-09. Reverses SPEC §5's Anthropic SDK row. The model is behind one env var (`OPENAI_MODEL`) and the tool loop is provider-shaped, not model-shaped, so swapping back is a small change if we want it. | 2026-09-09 |
 

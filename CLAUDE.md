@@ -50,7 +50,8 @@ If `forge` is not found, Foundry is at `~/.foundry/bin` or `~/.config/.foundry/b
   should stop the process, not degrade quietly — a silent failure on stage is unrecoverable.
 - Testnet keys are checked in on purpose. Do not treat them as secrets, and do not add real ones.
 
-## When writing Anthropic API code
+## The agent model
 
-Use the `claude-api` skill. Model ids and the thinking/effort parameters have changed recently
-and guessing them wastes time. Default model here is `claude-opus-5`.
+The chat agent runs on **OpenAI**, not Anthropic — `apps/hub/src/server/agent/loop.ts` uses the
+`openai` SDK. Model id comes from `OPENAI_MODEL` (default `gpt-5`) so it can be changed without a
+code edit. Do not reintroduce `@anthropic-ai/sdk` here; see `docs/DECISIONS.md` #20.
