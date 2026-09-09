@@ -99,6 +99,9 @@ public struct EnclaveHumanKey: HumanKey {
 
     public static var isAvailable: Bool { SecureEnclave.isAvailable }
 
+    // Deliberately still says "flippy". These are opaque Keychain identifiers, and renaming
+    // them orphans the key already generated on a real device — the phone would silently make
+    // a second key that the deployed gate does not accept.
     private static let account = "flippy.human.enclave"
 
     public init(loadingOrCreating: Bool = true) throws {

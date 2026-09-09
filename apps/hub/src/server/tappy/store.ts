@@ -69,9 +69,16 @@ function save(state: State): void {
   );
 }
 
+/** Enough history for a demo and a video; beyond that the file is just growing. */
+const MAX_PROPOSALS = 100;
+const MAX_MESSAGES = 200;
+
 export function putProposal(p: Proposal): void {
   const state = load();
-  state.proposals = [p, ...state.proposals.filter((x) => x.id.toLowerCase() !== p.id.toLowerCase())];
+  state.proposals = [
+    p,
+    ...state.proposals.filter((x) => x.id.toLowerCase() !== p.id.toLowerCase()),
+  ].slice(0, MAX_PROPOSALS);
   save(state);
 }
 
@@ -134,7 +141,15 @@ export function listContacts(): Contact[] {
 
 export function addMessage(m: ChatMessage): void {
   const state = load();
-  state.messages.push(m);
+  state.messages = [...state.messages, m].slice(-MAX_MESSAGES);
+  save(state);
+}
+
+/** Clearing the chat on the phone should clear it here too, or the agent keeps a memory the
+ *  user believes they deleted — which is both surprising and, with an injection in scope, unsafe. */
+export function clearMessages(): void {
+  const state = load();
+  state.messages = [];
   save(state);
 }
 

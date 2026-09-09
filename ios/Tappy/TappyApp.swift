@@ -192,6 +192,35 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// Registers this device with the hub again. The gate is redeployed whenever its
+    /// configuration changes, and without this the only way to recover was to delete the app.
+    func reregister() async {
+        guard let key else { return }
+        busy = true
+        defer { busy = false }
+        do {
+            let hub = try client()
+            registration = try await hub.register(publicKey: key.publicKey, kind: key.kind,
+                                                  label: UIDevice.current.name)
+            try? await hub.syncContacts(contacts.contacts)
+            wallet = try await hub.wallet()
+            banner = registration?.matchesGate == true
+                ? nil
+                : registration?.warning
+        } catch {
+            banner = error.localizedDescription
+        }
+    }
+
+    /// The public key the gate has to be configured with. Shown so it can be handed over
+    /// without digging through a server log.
+    var publicKeyHex: String { key?.publicKey.hexString ?? "—" }
+
+    func clearChat() async {
+        transcript.removeAll()
+        try? await client().clearChat()
+    }
+
     func refresh() async {
         guard let hub = try? client() else { return }
         wallet = try? await hub.wallet()

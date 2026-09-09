@@ -43,7 +43,7 @@ const pub = p256.getPublicKey(priv, false); // 65 bytes: 0x04 || qx || qy
 const qx = bytesToHex(pub.slice(1, 33));
 const qy = bytesToHex(pub.slice(33, 65));
 
-const message = sha256(new TextEncoder().encode("flippy p256 spike"));
+const message = sha256(new TextEncoder().encode("tappy p256 spike"));
 const sig = p256.sign(message, priv, { prehash: false }); // compact: 32-byte r || 32-byte s
 if (sig.length !== 64) throw new Error(`signature is ${sig.length} bytes, want 64`);
 const r = bytesToHex(sig.slice(0, 32));

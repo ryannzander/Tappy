@@ -152,11 +152,17 @@ public struct Registration: Decodable, Sendable {
 public enum HubError: Error, LocalizedError {
     case http(Int, String)
     case badURL(String)
+    case unreachable(String, String)
 
     public var errorDescription: String? {
         switch self {
-        case .http(let code, let body): return "hub returned \(code): \(body)"
-        case .badURL(let s): return "not a valid hub URL: \(s)"
+        case .http(let code, let body):
+            return "Hub returned \(code): \(body)"
+        case .badURL(let s):
+            return "Not a valid hub URL: \(s)"
+        case .unreachable(let url, let why):
+            return "Cannot reach \(url) — \(why). Check the Mac is running the hub and that "
+                + "both devices are on the same Wi-Fi. On a phone, localhost means the phone."
         }
     }
 }
@@ -198,6 +204,13 @@ public actor HubClient {
         _ = try await session.data(for: request)
     }
 
+    /// Forgets the conversation on the hub as well as on the phone.
+    public func clearChat() async throws {
+        var request = URLRequest(url: base.appendingPathComponent("api/m/chat"))
+        request.httpMethod = "DELETE"
+        _ = try await session.data(for: request)
+    }
+
     public func send(message: String) async throws -> ChatReply {
         try await post("api/m/chat", ["text": message])
     }
@@ -227,7 +240,14 @@ public actor HubClient {
     }
 
     private func run<T: Decodable>(_ request: URLRequest) async throws -> T {
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            // "Could not connect to the server" says nothing about which server or why.
+            throw HubError.unreachable(base.absoluteString, error.localizedDescription)
+        }
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(code) else {
             // Surface the hub's own message — it explains *why* a signature was refused, which

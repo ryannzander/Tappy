@@ -26,7 +26,7 @@ async function buildSigner(cfg: ReturnType<typeof loadConfig>): Promise<HumanSig
 
   const cli = new FlipperCli(cfg.FLIPPER_PORT, cfg.FLIPPER_BAUD);
   await cli.open();
-  await cli.mkdir("/ext/apps_data/flippy");
+  await cli.mkdir("/ext/apps_data/tappy");
   console.log(`[bridge] Flipper connected on ${cfg.FLIPPER_PORT}`);
   return new FlipperHumanSigner({ ...common, cli });
 }

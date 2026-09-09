@@ -69,12 +69,12 @@ terminal. Two thirds of the project is built against it.
 
 | | Workstream | Owner | Start here |
 |---|---|---|---|
-| A | contracts, protocol, deploys | @IGanjali | [brief](docs/workstreams/contracts.md) · [issue #4](https://github.com/ryannzander/FlippyTheDolphin/issues/4) |
-| B | web app, agent loop, shop | @ryannzander | [brief](docs/workstreams/app.md) · [issue #2](https://github.com/ryannzander/FlippyTheDolphin/issues/2) |
-| C | Flipper + bridge | @AnshuPlayz17 | [brief](docs/workstreams/device.md) · [issue #1](https://github.com/ryannzander/FlippyTheDolphin/issues/1) |
+| A | contracts, protocol, deploys | @IGanjali | [brief](docs/workstreams/contracts.md) · [issue #4](https://github.com/ryannzander/Tappy/issues/4) |
+| B | iOS app, hub, agent loop | @ryannzander | [brief](docs/workstreams/app.md) · [issue #2](https://github.com/ryannzander/Tappy/issues/2) |
+| C | Flipper + bridge | @AnshuPlayz17 | [brief](docs/workstreams/device.md) · [issue #1](https://github.com/ryannzander/Tappy/issues/1) |
 
 Three issues are labelled `blocker` and should be picked up in hour one. Everything else is
-labelled by milestone on the [issue board](https://github.com/ryannzander/FlippyTheDolphin/issues).
+labelled by milestone on the [issue board](https://github.com/ryannzander/Tappy/issues).
 
 ## Where to start reading
 

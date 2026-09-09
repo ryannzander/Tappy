@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { runTurn } from "~/server/agent/loop";
-import { listMessages, listProposals } from "~/server/tappy/store";
+import { clearMessages, listMessages, listProposals } from "~/server/tappy/store";
 import { fail, json } from "~/server/tappy/json";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +9,12 @@ export const maxDuration = 120;
 
 export async function GET() {
   return json({ messages: listMessages(), proposals: listProposals(20) });
+}
+
+/** "New chat" on the phone forgets the conversation here too. */
+export async function DELETE() {
+  clearMessages();
+  return json({ cleared: true });
 }
 
 export async function POST(req: Request) {

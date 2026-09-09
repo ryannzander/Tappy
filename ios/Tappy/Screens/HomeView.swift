@@ -276,6 +276,31 @@ struct SecuritySheet: View {
                         row("Wallet", Format.short(wallet.gate, lead: 12, tail: 8), mono: true)
                         row("The AI's key", Format.short(wallet.agent, lead: 12, tail: 8), mono: true)
                     }
+                    row("This device's public key", state.publicKeyHex, mono: true)
+
+                    Button {
+                        UIPasteboard.general.string = state.publicKeyHex
+                    } label: {
+                        Label("Copy key", systemImage: "doc.on.doc")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Theme.ink)
+                    }
+                    .padding(.top, 12)
+
+                    if state.registration?.matchesGate == false {
+                        Button { Task { await state.reregister() } } label: {
+                            Text(state.busy ? "Registering…" : "Register this device again")
+                        }
+                        .buttonStyle(LimeButtonStyle())
+                        .disabled(state.busy)
+                        .padding(.top, 12)
+
+                        Text("The wallet was redeployed with a different key. Give the key above "
+                             + "to whoever deploys the contract, then register again.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.dim)
+                            .padding(.top, 8)
+                    }
 
                     Text("""
                         This wallet needs two signatures to move anything.

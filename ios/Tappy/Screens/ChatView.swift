@@ -30,7 +30,7 @@ struct ChatView: View {
             Text("Ask Tappy").font(.system(size: 24, weight: .bold)).foregroundStyle(Theme.ink)
             Spacer()
             if !state.transcript.isEmpty {
-                Button { state.transcript.removeAll() } label: {
+                Button { Task { await state.clearChat() } } label: {
                     Image(systemName: "square.and.pencil")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(Theme.ink)
