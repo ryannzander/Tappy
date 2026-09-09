@@ -1,19 +1,15 @@
-import WebSocket from "ws";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex } from "viem";
-import {
-  MockHumanSigner,
-  approvalRequestSchema,
-  chainByKey,
-  hubToSignerSchema,
-  type Decision,
-  type HumanSigner,
-} from "@flippy/protocol";
+import { MockHumanSigner, chainByKey, proposalViewSchema, type HumanSigner } from "@flippy/protocol";
 import { loadConfig } from "./config.js";
 import { FlipperCli } from "./flipperCli.js";
 import { FlipperHumanSigner } from "./flipperSigner.js";
 
-const RECONNECT_MS = 2000;
+/** Fast enough to feel instant next to a human reaching for a device, slow enough to be free. */
+const POLL_MS = 1000;
+const ERROR_BACKOFF_MS = 3000;
+/** How long the device gets to answer before we give up on this proposal and re-poll. */
+const APPROVAL_TIMEOUT_MS = 120_000;
 
 async function buildSigner(cfg: ReturnType<typeof loadConfig>): Promise<HumanSigner> {
   const chain = chainByKey(cfg.CHAIN_KEY);
@@ -39,49 +35,57 @@ async function main(): Promise<void> {
   const cfg = loadConfig();
   const account = privateKeyToAccount(cfg.HUMAN_KEY as Hex);
   console.log(`[bridge] human address ${account.address}`);
-  console.log("[bridge] the gate must be deployed with this address as `human`");
+  console.log("[bridge] the gate must be deployed with HUMAN_K1_ADDRESS set to exactly that");
 
   const signer = await buildSigner(cfg);
-  connect(cfg.HUB_WS_URL, cfg.SIGNER_KIND, signer, account.address);
-}
+  const base = cfg.HUB_URL.replace(/\/$/, "");
+  console.log(`[bridge] polling ${base}/api/bridge/pending every ${POLL_MS}ms`);
 
-function connect(url: string, kind: "flipper" | "mock", signer: HumanSigner, address: Address): void {
-  const ws = new WebSocket(url);
+  // Proposals we have already answered. The hub moves them out of PENDING_HUMAN the moment
+  // it accepts our decision, but polling is not instant — without this we would show the
+  // same request on the device twice.
+  const answered = new Set<string>();
 
-  ws.on("open", () => {
-    console.log(`[bridge] connected to hub at ${url}`);
-    ws.send(JSON.stringify({ t: "signer.hello", address, kind: kind === "mock" ? "mock" : "flipper" }));
-  });
-
-  ws.on("message", async (raw) => {
-    const parsed = hubToSignerSchema.safeParse(JSON.parse(raw.toString()));
-    if (!parsed.success) return console.warn("[bridge] ignoring unparseable message");
-
-    if (parsed.data.t === "approval.cancel") {
-      console.log(`[bridge] hub cancelled ${parsed.data.id}`);
-      return;
-    }
-
-    const { view, timeoutMs } = approvalRequestSchema.parse(parsed.data);
-    console.log(`[bridge] approval requested: ${view.action} ${view.amount} -> ${view.counterparty}`);
-    let decision: Decision;
+  for (;;) {
     try {
-      decision = await signer.requestApproval(view, timeoutMs);
+      const res = await fetch(`${base}/api/bridge/pending`);
+      if (!res.ok) throw new Error(`hub returned ${res.status}: ${await res.text()}`);
+      const body = (await res.json()) as { pending: unknown };
+
+      if (!body.pending) {
+        await sleep(POLL_MS);
+        continue;
+      }
+
+      const view = proposalViewSchema.parse(body.pending);
+      if (answered.has(view.id)) {
+        await sleep(POLL_MS);
+        continue;
+      }
+
+      console.log(`[bridge] ${view.action} ${view.amount} -> ${view.counterparty}  (${view.short})`);
+      const decision = await signer.requestApproval(view, APPROVAL_TIMEOUT_MS);
+      answered.add(view.id);
+
+      const path = decision.approved ? "approve" : "reject";
+      const post = await fetch(`${base}/api/m/proposals/${view.id}/${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(decision.approved ? { signature: decision.humanSig } : {}),
+      });
+      const result = await post.text();
+
+      // A rejected signature means the gate would have reverted. That is worth shouting about:
+      // it usually means the gate was deployed with a different human address than this key.
+      console.log(`[bridge] -> ${decision.approved ? "APPROVED" : "REJECTED"} (hub: ${post.status}) ${result}`);
     } catch (err) {
-      console.error("[bridge] signer failed:", err);
-      decision = { id: view.id, approved: false, signer: address, at: Date.now() };
+      console.error("[bridge]", err instanceof Error ? err.message : err);
+      await sleep(ERROR_BACKOFF_MS);
     }
-    console.log(`[bridge] -> ${decision.approved ? "APPROVED" : "REJECTED"}`);
-    ws.send(JSON.stringify({ t: "approval.result", decision }));
-  });
-
-  ws.on("close", () => {
-    console.log(`[bridge] hub disconnected, retrying in ${RECONNECT_MS}ms`);
-    setTimeout(() => connect(url, kind, signer, address), RECONNECT_MS);
-  });
-
-  ws.on("error", (err) => console.error("[bridge] socket error:", err.message));
+  }
 }
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 main().catch((err) => {
   console.error(err);

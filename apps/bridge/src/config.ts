@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const schema = z.object({
   HUMAN_KEY: z.string().regex(/^0x[0-9a-fA-F]{64}$/, "HUMAN_KEY must be a 32-byte hex key"),
-  HUB_WS_URL: z.string().url().default("ws://localhost:3000/ws"),
+  HUB_URL: z.string().url().default("http://localhost:3000"),
   FLIPPER_PORT: z.string().default("/dev/cu.usbmodemflip_Flippy1"),
   FLIPPER_BAUD: z.coerce.number().default(230400),
   SIGNER_KIND: z.enum(["flipper", "mock"]).default("flipper"),
