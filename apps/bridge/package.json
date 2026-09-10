@@ -8,7 +8,8 @@
     "start": "tsx src/index.ts",
     "address": "tsx src/printAddress.ts",
     "flipper:install": "tsx src/installApp.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "flipper:spike": "tsx src/spikeWrite.ts"
   },
   "dependencies": {
     "@tappy/protocol": "workspace:*",

@@ -1,4 +1,4 @@
-import { toView } from "@tappy/protocol";
+import { toMobileProposal, toView } from "@tappy/protocol";
 import { listProposals } from "~/server/tappy/store";
 import { json } from "~/server/tappy/json";
 
@@ -16,5 +16,11 @@ export async function GET() {
     .sort((a, b) => a.createdAt - b.createdAt);
 
   const next = pending[0];
-  return json({ pending: next ? toView(next, "sepolia") : null, queued: pending.length });
+  return json({
+    pending: next ? toView(next, "sepolia") : null,
+    // The full call as well as the view, so the device side can rebuild the digest itself
+    // rather than signing whatever hash the server claims. Same rule as the phone.
+    proposal: next ? toMobileProposal(next) : null,
+    queued: pending.length,
+  });
 }

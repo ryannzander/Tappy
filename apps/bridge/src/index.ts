@@ -1,9 +1,17 @@
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex } from "viem";
-import { MockHumanSigner, chainByKey, proposalViewSchema, type HumanSigner } from "@tappy/protocol";
+import {
+  MockHumanSigner,
+  chainByKey,
+  mobileProposalSchema,
+  proposalDigest,
+  proposalViewSchema,
+  type HumanSigner,
+} from "@tappy/protocol";
 import { loadConfig } from "./config.js";
 import { FlipperCli } from "./flipperCli.js";
 import { FlipperHumanSigner } from "./flipperSigner.js";
+import { LocalHumanSigner } from "./localSigner.js";
 
 /** Fast enough to feel instant next to a human reaching for a device, slow enough to be free. */
 const POLL_MS = 1000;
@@ -22,6 +30,15 @@ async function buildSigner(cfg: ReturnType<typeof loadConfig>): Promise<HumanSig
   if (cfg.SIGNER_KIND === "mock") {
     console.log("[bridge] SIGNER_KIND=mock — approving from this terminal, no hardware used");
     return new MockHumanSigner({ ...common, mode: "cli" });
+  }
+
+  if (cfg.SIGNER_KIND === "local" || cfg.SIGNER_KIND === "auto") {
+    const auto = cfg.SIGNER_KIND === "auto";
+    console.log(
+      `[bridge] SIGNER_KIND=${cfg.SIGNER_KIND} — the terminal is standing in for the Flipper` +
+        (auto ? ", approving everything automatically" : ""),
+    );
+    return new LocalHumanSigner({ privateKey: cfg.HUMAN_KEY as Hex, auto });
   }
 
   const cli = new FlipperCli(cfg.FLIPPER_PORT, cfg.FLIPPER_BAUD);
@@ -50,7 +67,7 @@ async function main(): Promise<void> {
     try {
       const res = await fetch(`${base}/api/bridge/pending`);
       if (!res.ok) throw new Error(`hub returned ${res.status}: ${await res.text()}`);
-      const body = (await res.json()) as { pending: unknown };
+      const body = (await res.json()) as { pending: unknown; proposal: unknown };
 
       if (!body.pending) {
         await sleep(POLL_MS);
@@ -58,6 +75,24 @@ async function main(): Promise<void> {
       }
 
       const view = proposalViewSchema.parse(body.pending);
+
+      // Rebuild the digest from the call rather than trusting the one the hub sent. This is the
+      // same rule the phone follows: a hub that lied about what a proposal does cannot get a
+      // signature out of this process either.
+      const proposal = mobileProposalSchema.parse(body.proposal);
+      const recomputed = proposalDigest({
+        chainId: proposal.chainId,
+        gate: proposal.gate,
+        nonce: proposal.nonce,
+        call: proposal.call,
+        deadline: proposal.deadline,
+      });
+      if (recomputed.toLowerCase() !== view.digest.toLowerCase()) {
+        // Loud and fatal: this is either a bug or an attack, and neither should be retried.
+        throw new Error(
+          `digest mismatch — refusing to sign.\n  hub sent:   ${view.digest}\n  recomputed: ${recomputed}`,
+        );
+      }
       if (answered.has(view.id)) {
         await sleep(POLL_MS);
         continue;

@@ -97,7 +97,7 @@ final class AppState: ObservableObject {
 
     var keyStatus: String {
         switch key?.kind {
-        case .enclave: return "Secure Enclave"
+        case .enclave: return EnclaveHumanKey.strength.label
         case .software: return "Software key (Simulator)"
         case nil: return "No key"
         }
@@ -122,15 +122,30 @@ final class AppState: ObservableObject {
     }
     #endif
 
+    /// The Enclave where it genuinely works, software where it does not.
+    ///
+    /// `SecureEnclave.isAvailable` cannot be trusted on its own: it reports true on Apple
+    /// Silicon simulators, where every key operation then fails. So this tries for real and
+    /// falls back on the exception rather than on the flag — and says so, loudly, because a
+    /// software key is a materially weaker claim than a hardware one.
+    private func makeKey() throws -> HumanKey {
+        if EnclaveHumanKey.isAvailable {
+            do {
+                return try EnclaveHumanKey()
+            } catch {
+                banner = "No usable Secure Enclave here — using a software key. "
+                    + "Signatures still work, but the key is ordinary memory, not hardware. "
+                    + "Run on a real iPhone for the real thing."
+            }
+        }
+        return try SoftwareHumanKey()
+    }
+
     func setUp() async {
         busy = true
         defer { busy = false }
         do {
-            if key == nil {
-                key = EnclaveHumanKey.isAvailable
-                    ? try EnclaveHumanKey()
-                    : try SoftwareHumanKey()
-            }
+            if key == nil { key = try makeKey() }
             guard let key else { return }
             let hub = try client()
             registration = try await hub.register(

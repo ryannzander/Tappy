@@ -2,6 +2,22 @@ import CryptoKit
 import Foundation
 import LocalAuthentication
 
+/// How tightly the Enclave key is bound to a person. Surfaced in the UI because a demo that
+/// silently downgrades its own security claim is worse than one that fails.
+public enum KeyStrength: String, Codable, Sendable {
+    /// Biometry only, and the key is destroyed if the enrolled set changes.
+    case biometryBound
+    /// Biometry or the device passcode.
+    case userPresence
+
+    public var label: String {
+        switch self {
+        case .biometryBound: return "Secure Enclave · Face ID"
+        case .userPresence: return "Secure Enclave · Face ID or passcode"
+        }
+    }
+}
+
 public enum HumanKeyKind: String, Codable, Sendable {
     case enclave = "p256-enclave"
     case software = "p256-software"
@@ -103,6 +119,17 @@ public struct EnclaveHumanKey: HumanKey {
     // them orphans the key already generated on a real device — the phone would silently make
     // a second key that the deployed gate does not accept.
     private static let account = "flippy.human.enclave"
+    private static let strengthKey = "tappy.key.strength"
+
+    static func recordStrength(_ s: KeyStrength) {
+        UserDefaults.standard.set(s.rawValue, forKey: strengthKey)
+    }
+
+    /// Which policy the stored key was actually created under.
+    public static var strength: KeyStrength {
+        UserDefaults.standard.string(forKey: strengthKey)
+            .flatMap(KeyStrength.init(rawValue:)) ?? .biometryBound
+    }
 
     public init(loadingOrCreating: Bool = true) throws {
         guard SecureEnclave.isAvailable else { throw HumanKeyError.enclaveUnavailable }
@@ -115,26 +142,53 @@ public struct EnclaveHumanKey: HumanKey {
         // .biometryCurrentSet destroys the key if a face or fingerprint is enrolled later, so
         // adding a face cannot be used to steal signing authority. ...ThisDeviceOnly keeps the
         // blob out of iCloud backups.
-        var error: Unmanaged<CFError>?
-        guard
-            let access = SecAccessControlCreateWithFlags(
-                nil,
-                kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
-                [.privateKeyUsage, .biometryCurrentSet],
-                &error
-            )
-        else {
-            throw error!.takeRetainedValue() as Error
+        // Two access policies, strongest first.
+        //
+        // .biometryCurrentSet is what we want: the key dies if a face or fingerprint is enrolled
+        // later, so adding a face cannot be used to steal signing authority. But it refuses to
+        // create the key at all unless biometry is already enrolled, which fails on a device
+        // that only has a passcode and on a simulator with no enrolled face.
+        //
+        // .userPresence accepts biometry OR the device passcode. Weaker — a passcode holder can
+        // sign, and the key survives a new face — but it is still Enclave-held, still
+        // non-extractable, and still requires a live human. Falling back to it is much better
+        // than refusing to work, as long as the app says which one is in force, which it does.
+        let policies: [(SecAccessControlCreateFlags, KeyStrength)] = [
+            ([.privateKeyUsage, .biometryCurrentSet], .biometryBound),
+            ([.privateKeyUsage, .userPresence], .userPresence),
+        ]
+
+        var created: SecureEnclave.P256.Signing.PrivateKey?
+        var lastError: Error?
+        var chosen: KeyStrength = .biometryBound
+
+        for (flags, strength) in policies {
+            var cfError: Unmanaged<CFError>?
+            guard
+                let access = SecAccessControlCreateWithFlags(
+                    nil, kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, flags, &cfError
+                )
+            else {
+                lastError = cfError?.takeRetainedValue() as Error?
+                continue
+            }
+            do {
+                created = try SecureEnclave.P256.Signing.PrivateKey(accessControl: access)
+                chosen = strength
+                break
+            } catch {
+                lastError = error
+            }
         }
-        do {
-            key = try SecureEnclave.P256.Signing.PrivateKey(accessControl: access)
-        } catch {
-            // Rethrow with a message that names the fix rather than "Authentication failed".
+
+        guard let created else {
             throw NSError(
-                domain: "Tappy", code: (error as NSError).code,
-                userInfo: [NSLocalizedDescriptionKey: readableAuthError(error)]
+                domain: "Tappy", code: (lastError as NSError?)?.code ?? -1,
+                userInfo: [NSLocalizedDescriptionKey: readableAuthError(lastError ?? HumanKeyError.noKey)]
             )
         }
+        key = created
+        Self.recordStrength(chosen)
         try Self.storeBlob(key.dataRepresentation)
     }
 
