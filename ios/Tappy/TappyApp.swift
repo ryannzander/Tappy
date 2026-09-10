@@ -97,7 +97,7 @@ final class AppState: ObservableObject {
 
     var keyStatus: String {
         switch key?.kind {
-        case .enclave: return "Secure Enclave"
+        case .enclave: return EnclaveHumanKey.strength.label
         case .software: return "Software key (Simulator)"
         case nil: return "No key"
         }
