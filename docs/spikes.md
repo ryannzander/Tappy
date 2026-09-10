@@ -37,7 +37,9 @@ physical press" — it only says "the key never leaves the device" if M6 lands. 
 ## 1. Do Flipper CLI `storage` commands work while a JS app is in the foreground? — <owner C>, TODO hour 1
 **Why it matters:** the whole bridge↔device channel depends on it. If it fails there is no other
 route from the JS engine to the laptop.
-**How to test:** see `docs/workstreams/device.md` → "Hour 0–1 Spike 1". Five steps, no code.
+**How to test:** `./scripts/flipper-check.sh` with the Flipper plugged in. It finds the port,
+installs the app, and writes a request over the CLI while the app holds the foreground. One
+command, and it names its own failure.
 **Fallbacks if it fails:** (a) app polls instead of blocking in the dialog; (b) speak the RPC
 protobuf protocol instead of the text CLI; (c) C app owning USB CDC.
 **Answer:** _not yet run_
