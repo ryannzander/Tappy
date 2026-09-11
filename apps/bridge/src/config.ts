@@ -10,7 +10,16 @@ const schema = z.object({
   // flipper: the real device. local: this terminal stands in for it, same key and signature.
   // auto: same again but approves without asking, for scripted runs. mock: the protocol's
   // MockHumanSigner, which only signs messages it was told about.
-  SIGNER_KIND: z.enum(["flipper", "local", "auto", "mock"]).default("flipper"),
+  // nfc: tap a tag on the Flipper to approve — the headline interaction, and it needs no
+  // Apple Developer account because the Flipper reads the tag, not the phone.
+  // flipper: the device's own screen and buttons. local: this terminal stands in, same key and
+  // signature. auto: same again without asking, for scripted runs. mock: the protocol's
+  // MockHumanSigner, which only signs messages it was told about.
+  SIGNER_KIND: z.enum(["nfc", "flipper", "local", "auto", "mock"]).default("nfc"),
+  /** Comma-separated tag UIDs allowed to approve. Empty means any tag. */
+  ALLOWED_UIDS: z.string().default(""),
+  /** The CLI verb that starts an NFC read. Differs across firmware; see flipper-check.sh. */
+  FLIPPER_NFC_CMD: z.string().default("nfc detect"),
   CHAIN_KEY: z.enum(["sepolia", "arc", "hedera"]).default("sepolia"),
   GATE_ADDRESS: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
 });
