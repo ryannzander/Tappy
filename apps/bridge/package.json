@@ -9,7 +9,8 @@
     "address": "tsx src/printAddress.ts",
     "flipper:install": "tsx src/installApp.ts",
     "typecheck": "tsc --noEmit",
-    "flipper:spike": "tsx src/spikeWrite.ts"
+    "flipper:spike": "tsx src/spikeWrite.ts",
+    "nfc:probe": "tsx src/nfcProbe.ts"
   },
   "dependencies": {
     "@tappy/protocol": "workspace:*",

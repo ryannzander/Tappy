@@ -54,6 +54,12 @@ echo "   writing a test request over the CLI while the app is in the foreground.
 pnpm --filter @tappy/bridge exec tsx src/spikeWrite.ts 2>&1 | sed 's/^/     /'
 
 echo
+echo "── 5. NFC: does tapping a tag work? ───────────────────"
+echo "   This is the headline interaction, and it needs no Apple account:"
+echo "   the Flipper reads the tag, the phone never does."
+pnpm --filter @tappy/bridge exec tsx src/nfcProbe.ts 2>&1 | sed 's/^/     /'
+
+echo
 echo "── verdict ────────────────────────────────────────────"
 echo "   If the Flipper showed an approval dialog: THE CHANNEL WORKS."
 echo "   If nothing happened: spike 1 has failed and the channel needs the fallback."
