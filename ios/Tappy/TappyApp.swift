@@ -117,8 +117,12 @@ final class AppState: ObservableObject {
         guard let hub = try? client() else { return }
         registration = try? await hub.register(publicKey: key?.publicKey ?? Data(),
                                                kind: .software, label: "Preview")
-        wallet = try? await hub.wallet()
         try? await hub.syncContacts(contacts.contacts)
+        if let turns = try? await hub.history(), !turns.isEmpty {
+            transcript = turns.map { Bubble(mine: $0.mine, text: $0.text) }
+        }
+        await refresh()
+        startPolling()
     }
     #endif
 
@@ -155,6 +159,9 @@ final class AppState: ObservableObject {
             )
             wallet = try await hub.wallet()
             try? await hub.syncContacts(contacts.contacts)
+            if let turns = try? await hub.history(), !turns.isEmpty {
+                transcript = turns.map { Bubble(mine: $0.mine, text: $0.text) }
+            }
             if let warning = registration?.warning { banner = warning }
             startPolling()
         } catch {
@@ -239,6 +246,15 @@ final class AppState: ObservableObject {
     func refresh() async {
         guard let hub = try? client() else { return }
         wallet = try? await hub.wallet()
+        // Proposals come from the hub, not only from turns this app happened to run. Otherwise
+        // a relaunch while something is awaiting approval shows nothing at all, and the request
+        // sits invisible until it expires.
+        if let ids = wallet?.proposalIds {
+            for id in ids where !recent.contains(where: { $0.id == id }) {
+                if let p = try? await hub.proposal(id) { recent.append(p) }
+            }
+            recent.sort { $0.id > $1.id }
+        }
         var updated: [MobileProposal] = []
         for proposal in recent + (pending.map { [$0] } ?? []) {
             if let fresh = try? await hub.proposal(proposal.id) { updated.append(fresh) }
