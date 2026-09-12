@@ -11,11 +11,20 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Load .env without clobbering anything already exported. A blank line in .env used to
+# overwrite a value passed on the command line, which then failed the check below and left
+# the old server running — a confusing way to discover your restart did nothing.
 if [ -f .env ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . ./.env
-  set +a
+  while IFS= read -r line; do
+    case "$line" in ''|\#*) continue ;; esac
+    key=${line%%=*}
+    value=${line#*=}
+    [ "$key" = "$line" ] && continue
+    # Existing environment wins, and an empty value in .env is not a value.
+    [ -n "${!key:-}" ] && continue
+    [ -z "$value" ] && continue
+    export "$key=$(printf '%s' "$value" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")"
+  done < .env
 fi
 
 : "${SEPOLIA_RPC_URL:?not set. Add it to .env — see .env.example}"
