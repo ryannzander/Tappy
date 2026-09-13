@@ -32,6 +32,7 @@ Neither key can move funds alone.
 | `device/tappy-js` | The Flipper app (JavaScript) |
 | `device/tappy-c` | On-device signing — stretch goal, not started |
 | `docs/` | [`SPEC.md`](docs/SPEC.md), per-person briefs, spike log |
+| `site/` | The public page, deployed to GitHub Pages — it recomputes the digest in the browser |
 
 ## Quick start
 
