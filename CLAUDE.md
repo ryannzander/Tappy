@@ -19,6 +19,8 @@ settled list; do not reopen those without being asked.
 - `packages/protocol` — shared types, the EIP-712 digest, `HumanSigner`, `MockHumanSigner`.
 - `packages/contracts` — Foundry. `TappyGate` is the 2-of-2 gate.
 - `device/tappy-js` — the Flipper app, written in mJS.
+- `site/` — the public page on GitHub Pages. No build step, no dependencies; `site/digest.js` is a
+  from-scratch keccak256 kept honest by the frozen vector, not a third protocol implementation.
 
 ## Rules specific to this repo
 
