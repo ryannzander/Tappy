@@ -52,7 +52,7 @@ export class FlipperCli {
   }
 
   /** Sends a line and resolves with everything printed before the next `>:` prompt. */
-  private command(line: string, timeoutMs = 5000): Promise<string> {
+  command(line: string, timeoutMs = 5000): Promise<string> {
     if (!this.port) throw new Error("FlipperCli: port is not open");
     this.port.write(line + "\r\n");
     return new Promise((resolve, reject) => {
@@ -84,6 +84,57 @@ export class FlipperCli {
     const idx = out.indexOf("\n\n");
     const body = (idx >= 0 ? out.slice(idx + 2) : out).trim();
     return body.length ? body : null;
+  }
+
+  /** Sends a line without waiting for a prompt. For commands that stream until interrupted. */
+  send(line: string): void {
+    if (!this.port) throw new Error("FlipperCli: port is not open");
+    this.port.write(line + "\r\n");
+  }
+
+  /** Ctrl-C. Stops a streaming command like `nfc detect`. */
+  interrupt(): void {
+    if (!this.port) throw new Error("FlipperCli: port is not open");
+    this.port.write("\x03");
+  }
+
+  /**
+   * Waits for a pattern anywhere in the incoming stream. Unlike `command`, this does not send
+   * anything and does not expect a prompt — an NFC read finishes when a human taps a tag, which
+   * may be seconds away or never.
+   */
+  awaitMatch(pattern: RegExp, timeoutMs: number): Promise<RegExpMatchArray> {
+    return new Promise((resolve, reject) => {
+      const existing = this.buffer.match(pattern);
+      if (existing) return resolve(existing);
+
+      const waiter = {
+        match: pattern,
+        resolve: () => {
+          const m = this.buffer.match(pattern);
+          if (m) resolve(m);
+          else reject(new Error("matched then lost"));
+        },
+        reject,
+      };
+      this.waiters.push(waiter as never);
+      setTimeout(() => {
+        const i = this.waiters.indexOf(waiter as never);
+        if (i >= 0) {
+          this.waiters.splice(i, 1);
+          reject(new Error(`no match for ${pattern} after ${timeoutMs}ms`));
+        }
+      }, timeoutMs);
+    });
+  }
+
+  /** Everything received so far. Useful for probing an unfamiliar command's output. */
+  get transcript(): string {
+    return this.buffer;
+  }
+
+  clearTranscript(): void {
+    this.buffer = "";
   }
 
   async remove(path: string): Promise<void> {

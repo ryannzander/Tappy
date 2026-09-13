@@ -12,6 +12,7 @@ import { loadConfig } from "./config.js";
 import { FlipperCli } from "./flipperCli.js";
 import { FlipperHumanSigner } from "./flipperSigner.js";
 import { LocalHumanSigner } from "./localSigner.js";
+import { NfcHumanSigner } from "./nfcSigner.js";
 
 /** Fast enough to feel instant next to a human reaching for a device, slow enough to be free. */
 const POLL_MS = 1000;
@@ -43,8 +44,26 @@ async function buildSigner(cfg: ReturnType<typeof loadConfig>): Promise<HumanSig
 
   const cli = new FlipperCli(cfg.FLIPPER_PORT, cfg.FLIPPER_BAUD);
   await cli.open();
-  await cli.mkdir("/ext/apps_data/tappy");
   console.log(`[bridge] Flipper connected on ${cfg.FLIPPER_PORT}`);
+
+  if (cfg.SIGNER_KIND === "nfc") {
+    const allowedUids = cfg.ALLOWED_UIDS.split(",")
+      .map((u) => u.trim().replace(/[^0-9A-Fa-f]/g, "").toLowerCase())
+      .filter(Boolean);
+    console.log(
+      allowedUids.length > 0
+        ? `[bridge] SIGNER_KIND=nfc — tap to approve, ${allowedUids.length} tag(s) registered`
+        : "[bridge] SIGNER_KIND=nfc — tap to approve, ANY tag accepted (set ALLOWED_UIDS to restrict)",
+    );
+    return new NfcHumanSigner({
+      privateKey: cfg.HUMAN_KEY as Hex,
+      cli,
+      allowedUids,
+      command: cfg.FLIPPER_NFC_CMD,
+    });
+  }
+
+  await cli.mkdir("/ext/apps_data/tappy");
   return new FlipperHumanSigner({ ...common, cli });
 }
 

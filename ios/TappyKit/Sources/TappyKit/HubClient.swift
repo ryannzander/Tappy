@@ -135,6 +135,17 @@ public struct WalletInfo: Decodable, Sendable {
     public let agent: String
     public let humanQx: String
     public let humanQy: String
+    /// Ids of the hub's recent proposals, so a fresh launch can pick up anything still pending.
+    public let proposals: [ProposalRef]?
+
+    public struct ProposalRef: Decodable, Sendable { public let id: String }
+    public var proposalIds: [String] { (proposals ?? []).map(\.id) }
+}
+
+public struct ChatTurn: Decodable, Sendable {
+    public let role: String
+    public let text: String
+    public var mine: Bool { role == "user" }
 }
 
 public struct ChatReply: Decodable, Sendable {
@@ -209,6 +220,14 @@ public actor HubClient {
         var request = URLRequest(url: base.appendingPathComponent("api/m/chat"))
         request.httpMethod = "DELETE"
         _ = try await session.data(for: request)
+    }
+
+    /// The conversation so far. The hub keeps it, so the chat survives closing the app —
+    /// otherwise every relaunch looks like the agent has amnesia.
+    public func history() async throws -> [ChatTurn] {
+        struct Envelope: Decodable { let messages: [ChatTurn] }
+        let envelope: Envelope = try await get("api/m/chat")
+        return envelope.messages
     }
 
     public func send(message: String) async throws -> ChatReply {

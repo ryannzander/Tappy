@@ -1,0 +1,774 @@
+/* Tappy — brand is lime #9FE870, ink #163300, white. Lime means approved and nothing else;
+   red appears only where something refuses. */
+
+:root {
+  --ink: #163300;
+  --ink-lift: #1d4300;
+  --lime: #9fe870;
+  --lime-dim: #cdeeb6;
+  --paper: #f2f2f0;
+  --rule: #dde2d8;
+  --alarm: #c2352a;
+  --alarm-soft: #f7dedb;
+  --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --gutter: clamp(20px, 5vw, 64px);
+  --wide: 1180px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--ink);
+  background: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  color: inherit;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+:focus-visible {
+  /* currentColor so the ring is legible on the ink, lime and white grounds alike */
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---------- header ---------- */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 26px var(--gutter) 8px;
+  color: var(--lime);
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.mark svg,
+.foot-mark svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  opacity: 0.85;
+}
+
+.mark .solid,
+.foot-mark .solid {
+  fill: currentColor;
+  opacity: 1;
+}
+
+.bar nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2.4vw, 30px);
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.bar nav a {
+  color: var(--lime-dim);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+}
+
+.bar nav a:hover {
+  color: var(--lime);
+  border-bottom-color: var(--lime);
+}
+
+.bar .bar-cta {
+  padding: 7px 18px;
+  border: 1px solid rgba(159, 232, 112, 0.45);
+  border-radius: 999px;
+  color: var(--lime);
+}
+
+.bar .bar-cta:hover {
+  background: var(--lime);
+  color: var(--ink);
+  border-color: var(--lime);
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: clamp(30px, 5vw, 56px) var(--gutter) clamp(56px, 9vw, 104px);
+  color: #fff;
+}
+
+.hero-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(24px, 5vw, 60px);
+  align-items: end;
+  margin-bottom: clamp(36px, 5vw, 60px);
+}
+
+.hero h1 {
+  font-size: clamp(2.6rem, 6.4vw, 4.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  color: var(--lime);
+}
+
+.hero .lede {
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(1rem, 1.25vw, 1.14rem);
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* the machine: left is what is proposed, right is what the phone does about it */
+
+.machine {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  border-radius: 32px;
+  overflow: hidden;
+  scroll-margin-top: 24px;
+}
+
+.machine h2 {
+  font-size: 1.28rem;
+  letter-spacing: -0.02em;
+}
+
+.machine .half-note {
+  margin: 10px 0 26px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 42ch;
+}
+
+.machine-half {
+  padding: clamp(24px, 3.4vw, 38px);
+}
+
+.tx {
+  background: var(--ink-lift);
+  color: #fff;
+}
+
+.tx h2 {
+  color: var(--lime);
+}
+
+.tx .half-note {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.field {
+  display: block;
+  margin-bottom: 20px;
+}
+
+.field > span {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--lime-dim);
+  margin-bottom: 4px;
+}
+
+.field input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 1.02rem;
+  font-weight: 500;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(159, 232, 112, 0.4);
+  border-radius: 0;
+  padding: 6px 0;
+}
+
+.field input.mono {
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+}
+
+.field input:focus {
+  outline: none;
+  border-bottom-color: var(--lime);
+}
+
+.field input:focus-visible {
+  outline: none;
+  box-shadow: 0 2px 0 var(--lime);
+}
+
+.amount .input-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  border-bottom: 1px solid rgba(159, 232, 112, 0.4);
+}
+
+.amount .input-row:focus-within {
+  border-bottom-color: var(--lime);
+}
+
+.amount input {
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+.amount input:focus-visible {
+  box-shadow: none;
+}
+
+.amount em {
+  font-style: normal;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--lime);
+}
+
+.field-pair {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.fixed-note {
+  margin: 4px 0 24px;
+  font-size: 0.86rem;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.fixed-note b {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.tx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn {
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  color: var(--lime);
+  background: transparent;
+  border: 1px solid rgba(159, 232, 112, 0.45);
+}
+
+.btn-ghost:hover {
+  background: var(--lime);
+  color: var(--ink);
+  border-color: var(--lime);
+}
+
+.btn-ghost[data-active="true"] {
+  background: var(--alarm);
+  border-color: var(--alarm);
+  color: #fff;
+}
+
+/* the verdict half carries the whole point, so it changes surface, not just a label */
+
+.phone {
+  background: var(--lime);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+}
+
+.phone .half-note {
+  color: rgba(22, 51, 0, 0.78);
+}
+
+.phone[data-state="refused"] {
+  background: var(--alarm);
+  color: #fff;
+}
+
+.phone[data-state="refused"] h2,
+.phone[data-state="invalid"] h2 {
+  color: inherit;
+}
+
+.phone[data-state="refused"] .half-note {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.phone[data-state="invalid"] {
+  background: #46503f;
+  color: #fff;
+}
+
+.phone[data-state="invalid"] .half-note {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.hash {
+  margin-bottom: 18px;
+}
+
+.hash-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0.78;
+  margin-bottom: 6px;
+}
+
+.digest {
+  display: block;
+  font-size: clamp(0.78rem, 1.5vw, 0.95rem);
+  line-height: 1.5;
+  word-break: break-all;
+  font-weight: 500;
+}
+
+.server .digest {
+  opacity: 0.86;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.state {
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+}
+
+.state-title {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.state-body {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+
+.vector-check {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(22, 51, 0, 0.25);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.vector-check[data-ok="true"]::before {
+  content: "✓ ";
+}
+
+.vector-check[data-ok="false"] {
+  color: var(--alarm);
+}
+
+/* ---------- shared section furniture ---------- */
+
+.section-head {
+  font-size: clamp(1.85rem, 3.6vw, 2.7rem);
+  max-width: 20ch;
+}
+
+.section-lede {
+  margin: 16px 0 0;
+  max-width: 58ch;
+  font-size: 1.1rem;
+  opacity: 0.72;
+}
+
+.flow,
+.shots,
+.attack,
+.check,
+.limits {
+  padding: clamp(56px, 8vw, 104px) var(--gutter);
+}
+
+.flow > *,
+.shots > *,
+.attack > *,
+.check > *,
+.limits > * {
+  max-width: var(--wide);
+  margin-inline: auto;
+}
+
+/* ---------- how it works ---------- */
+
+.flow {
+  background: #fff;
+}
+
+.steps {
+  list-style: none;
+  margin: clamp(36px, 5vw, 56px) auto 0;
+  padding: 0;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: clamp(16px, 4vw, 48px);
+  padding: 26px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.steps li:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.sig {
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: rgba(22, 51, 0, 0.68);
+  padding-top: 4px;
+}
+
+.sig.done {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.steps h3 {
+  font-size: 1.32rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.steps p {
+  margin: 0;
+  max-width: 62ch;
+  color: rgba(22, 51, 0, 0.78);
+}
+
+/* ---------- screenshots ---------- */
+
+.shots {
+  background: var(--lime);
+}
+
+.shot-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(16px, 2.5vw, 30px);
+  margin-top: clamp(36px, 5vw, 56px);
+}
+
+.shot-row figure {
+  margin: 0;
+}
+
+.shot-row img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 22px;
+  border: 1px solid rgba(22, 51, 0, 0.12);
+}
+
+.shot-row figcaption {
+  margin-top: 14px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: rgba(22, 51, 0, 0.82);
+}
+
+.shot-row figure:first-child figcaption {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ---------- the attack ---------- */
+
+.attack {
+  background: var(--ink);
+  color: #fff;
+}
+
+.attack .section-head {
+  color: var(--lime);
+}
+
+.attack-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: clamp(28px, 5vw, 64px);
+  margin-top: clamp(32px, 4vw, 48px);
+  align-items: start;
+}
+
+.attack-grid p {
+  max-width: 58ch;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.attack-punch {
+  color: #fff;
+  font-size: 1.18rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+.injection {
+  margin: 0;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid rgba(194, 53, 42, 0.55);
+  background: rgba(194, 53, 42, 0.12);
+}
+
+.injection .hash-label {
+  opacity: 0.7;
+}
+
+.injection p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.injection .payload {
+  color: #ff9b91;
+}
+
+/* ---------- claims ---------- */
+
+.check {
+  background: #fff;
+}
+
+.claims {
+  list-style: none;
+  margin: clamp(36px, 5vw, 56px) auto 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(28px, 4vw, 52px);
+}
+
+.claims h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  max-width: 30ch;
+}
+
+.claims p {
+  max-width: 52ch;
+  color: rgba(22, 51, 0, 0.78);
+}
+
+.claims a {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  text-decoration-color: rgba(22, 51, 0, 0.3);
+  text-underline-offset: 4px;
+}
+
+.claims a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---------- limits ---------- */
+
+.limits {
+  background: var(--paper);
+}
+
+.limit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(20px, 3vw, 40px);
+  margin-top: clamp(28px, 4vw, 44px);
+}
+
+.limit-grid p {
+  margin: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  font-size: 0.98rem;
+  color: rgba(22, 51, 0, 0.75);
+}
+
+.limit-grid b {
+  color: var(--ink);
+}
+
+/* ---------- footer ---------- */
+
+footer {
+  background: var(--ink);
+  color: var(--lime);
+  padding: clamp(48px, 7vw, 80px) var(--gutter);
+  display: grid;
+  gap: 28px;
+  max-width: var(--wide);
+  margin-inline: auto;
+}
+
+.foot-mark {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.foot-mark p {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.foot-links {
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+  font-size: 0.98rem;
+}
+
+.foot-links a {
+  color: var(--lime-dim);
+  text-underline-offset: 4px;
+}
+
+.foot-links a:hover {
+  color: var(--lime);
+}
+
+.foot-fine {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ---------- narrow ---------- */
+
+@media (max-width: 900px) {
+  .hero-top,
+  .machine,
+  .attack-grid,
+  .claims,
+  .limit-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shot-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero .lede {
+    max-width: 60ch;
+  }
+
+  .steps li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .sig {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    font-size: 16px;
+  }
+
+  .shot-row {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 380px;
+  }
+
+  .bar nav {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.9rem;
+  }
+
+  .field-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
